@@ -5,4 +5,3 @@ actions:
     - action: 'install'
     - action: 'execute_hanging_job'
       actor: 'test_recurring_actions_1'
-      recurring: '1m'
