@@ -1,7 +1,7 @@
 
-@0xe5d849bb1f16a117;
+@0x98d65a4b8412a8a2;
 struct Schema {
 	repo2Template1 @0 :Text;
-	description @1 :Text = ""description"";
+	description @1 :Text = "description";
 
 }
