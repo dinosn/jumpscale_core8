@@ -125,6 +125,8 @@ class StoragePool(Mountable):
 
     @property
     def fsinfo(self):
+        if self.mountpoint is None:
+            raise ValueError("can't get fsinfo if storagepool is not mounted")
         return self._client.btrfs.info(self.mountpoint)
 
     @mountpoint.setter
