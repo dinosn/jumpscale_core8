@@ -341,13 +341,16 @@ class AtYourServiceRepo():
             except KeyError:
                 raise j.exceptions.NotFound('cant find service with key %s' % key)
 
-        models = self.db.services.find(actor="%s.*" % role, name=instance)
+        actor_role = role.replace(".", "\.")
+        models = self.db.services.find(actor="({role}|{role}\..*)".format(role=actor_role), name=instance)
         if len(models) == 1:
             return models[0].objectGet(self)
 
         if len(models) <= 0 and die:
             raise j.exceptions.NotFound(message="Cannot find service %s:%s" %
                                         (role, instance), level=1, source="", tags="", msgpub="")
+        if len(models) > 1 and die:
+            raise j.exceptions.RuntimeError(message="Found more than one service. %s" % models)
         return None
 
     def serviceGetByKey(self, key):

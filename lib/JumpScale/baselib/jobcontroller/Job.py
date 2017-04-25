@@ -105,7 +105,8 @@ class JobHandler(logging.Handler):
             category = 'errormsg'
         self._job_model.log(msg=record.getMessage(), level=record.levelno, category=category, epoch=int(record.created), tags='')
 
-class Job():
+
+class Job:
     """
     is what needs to be done for 1 specific action for a service
     """
@@ -273,15 +274,12 @@ class Job():
         self.save()
         return self._future
 
-    async def cancel(self):
+    def cancel(self):
         self._cancelled = True
         if self._future:
             self._future.remove_done_callback(_execute_cb)
             self._future.cancel()
-            try:
-                await self._future
-            except asyncio.CancelledError:
-                self.logger.info("job {} cancelled".format(self))
+            self.logger.info("job {} cancelled".format(self))
 
 
     def str_error(self, error):

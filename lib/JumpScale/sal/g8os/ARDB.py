@@ -83,11 +83,11 @@ class ARDB:
         if not self.container.is_running():
             return
 
-        is_running, process = self.is_running()
+        is_running, job = self.is_running()
         if not is_running:
             return
 
-        self.container.client.process.kill(process['cmd']['id'])
+        self.container.client.job.kill(job['cmd']['id'])
 
         # wait for ardb to stop
         start = time.time()
@@ -102,9 +102,9 @@ class ARDB:
 
     def is_running(self):
         try:
-            for process in self.container.client.job.list():
-                if 'name' in process['cmd']['arguments'] and process['cmd']['arguments']['name'] == '/bin/ardb-server':
-                    return (True, process)
+            for job in self.container.client.job.list():
+                if 'name' in job['cmd']['arguments'] and job['cmd']['arguments']['name'] == '/bin/ardb-server':
+                    return (True, job)
             return (False, None)
         except Exception as err:
             if str(err).find("invalid container id"):

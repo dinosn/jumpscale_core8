@@ -6,6 +6,7 @@ class StoragePoolAys(AYSable):
 
     def __init__(self, storagepool):
         self._obj = storagepool
+        self._client = storagepool._client
         self.actor = 'storagepool'
 
     def create(self, aysrepo):
@@ -15,11 +16,23 @@ class StoragePoolAys(AYSable):
             service = None
 
         device_map = []
+        disks = self._client.disk.list()['blockdevices']
         for device in self._obj.devices:
-            info = self._obj.node.client.disk.getinfo(device[5:8], device[5:9])
+            info = None
+            for disk in disks:
+                if device == "/dev/%s" % disk['kname'] and disk['mountpoint']:
+                    info = disk
+                    break
+                for part in disk.get('children', []) or []:
+                    if device == "/dev/%s" % part['kname'] and part['mountpoint']:
+                        info = part
+                        break
+                if info:
+                    break
+
             device_map.append({
                 'device': device,
-                'partUUID': info['partuuid'] or '',
+                'partUUID': info['partuuid'] or '' if info else '',
             })
 
         if service is None:

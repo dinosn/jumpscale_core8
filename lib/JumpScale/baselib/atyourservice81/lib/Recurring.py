@@ -35,16 +35,10 @@ class RecurringTask:
         # cancel recurring task
         if self._future:
             self._future.cancel()
-            try:
-                # we wait here to make sure to give the time to the futur to cancel itself.
-                # TODO: timeout after a while ?
-                await self._future
-            except asyncio.CancelledError:
-                #  it should pass here, the canceld future should raise this exception
-                self.logger.info("recurring task for {}:{} is cancelled".format(self.service, self.action))
+            self.logger.info("recurring task for {}:{} is cancelled".format(self.service, self.action))
 
         if self._job:
-            await self._job.cancel()
+            self._job.cancel()
 
 
 if __name__ == '__main__':

@@ -55,6 +55,7 @@ class StoragePools:
 
 
 class StoragePool(Mountable):
+
     def __init__(self, node, name, devices):
         self.node = node
         self._client = node._client
@@ -86,10 +87,14 @@ class StoragePool(Mountable):
 
     @property
     def mountpoint(self):
+        disks = self._client.disk.list()['blockdevices']
         for device in self.devices:
-            mountpoint = self._client.disk.getinfo(device[5:8], device[5:9]).get('mountpoint')
-            if mountpoint:
-                return mountpoint
+            for disk in disks:
+                if device == "/dev/%s" % disk['kname'] and disk['mountpoint']:
+                    return disk['mountpoint']
+                for part in disk.get('children', []) or []:
+                    if device == "/dev/%s" % part['kname'] and part['mountpoint']:
+                        return part['mountpoint']
 
     def is_device_used(self, device):
         """
@@ -120,6 +125,8 @@ class StoragePool(Mountable):
 
     @property
     def fsinfo(self):
+        if self.mountpoint is None:
+            raise ValueError("can't get fsinfo if storagepool is not mounted")
         return self._client.btrfs.info(self.mountpoint)
 
     @mountpoint.setter

@@ -40,7 +40,6 @@ securitySchemes:
         - "company:contracts:read"
         - "contract:read"
         - "contract:participant"
-        - "contract:participant"
 
 types:
   Repository:
@@ -62,7 +61,7 @@ types:
       path: string
     example:
       name: "cockpit.yaml"
-      content: ''
+      content: "service__name:\\n   param:value"
       path: "/opt/code/cockpit/repo/blueprints/my_blueprints.ayml"
       hash: '45d4dbd44a0a3c3c8cf62acdab8e0850'
       archived: true

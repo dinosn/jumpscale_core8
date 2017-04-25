@@ -11,7 +11,7 @@ Following 4 directories are relevant in an AYS repo:
 - **actortemplates**
 
   - Local set of AYS actor templates
-  - AYS will always first look here for an AYS actor template, and if not found here check the AYS configuration file (`/optvar/hrd/system/atyourservice.hrd`) as discussed above to know where to get the AYS actor template
+  - AYS will always first look here for an AYS actor template, and if not found, will look in the available actor template repos as discussed above to know where to get the AYS actor template
 
 - **actor**
 
@@ -22,8 +22,9 @@ Following 4 directories are relevant in an AYS repo:
 - **services**
 
   - Here the actual expanded services instances live
-  - An `instance.hrd` file has all the info as required to make a deployment reality (install)
-  - An `state.md` file which is the file which has all info related with states and results of the executing actions
+  - A `service.json` file which has checksums of all actions defined to track updated as well states and results of the executing actions and some metadata.
+  - A `data.json` file has all the info as required to make a deployment reality (install)
+  - An `schema.capnp` file which contains the service schema to be configured by the data.
 
 ```
 !!!

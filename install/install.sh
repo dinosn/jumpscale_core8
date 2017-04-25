@@ -17,7 +17,7 @@ rm -f $TMPDIR/jumpscale_done.yaml
 rm -rf $TMPDIR/jsexecutor.json
 rm -f $TMPDIR/done
 mkdir -p /root/.ssh
-ssh-keyscan github.com >> /root/.ssh/known_hosts
+
 cd $TMPDIR
 function clean_system {
     set +ex
@@ -95,7 +95,6 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
     dist=`grep DISTRIB_ID /etc/*-release | awk -F '=' '{print $2}'`
     if [ "$dist" == "Ubuntu" ]; then
         echo "found ubuntu"
-        apt-get install git
         apt-get install mc curl git ssh python3.5 -y
         apt-get install python3-pip -y
         apt-get install libssl-dev -y
@@ -107,6 +106,8 @@ elif [ "$(expr substr $(uname -s) 1 5)" == "Linux" ]; then
         rm -f /usr/bin/python3
         ln -s /usr/bin/python3.5 /usr/bin/python
         ln -s /usr/bin/python3.5 /usr/bin/python3
+
+        ssh-keyscan github.com >> /root/.ssh/known_hosts
     fi
 
 elif [ "$(expr substr $(uname -s) 1 9)" == "CYGWIN_NT" ]; then

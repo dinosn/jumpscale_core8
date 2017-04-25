@@ -3,10 +3,15 @@
 > Note that parts of the **AtYourService** documentation is deprecated. It's still heavily being reviewed.
 
 ## What is AYS?
+AYS stands for "At Your Service". It is an application lifecycle management system for cloud infrastructure and applications and is installed as part of a JumpScale installation.
 
-AYS is a self-healing application management framework for cloud infrastructure and is installed as part of a JumpScale installation.
+### AYS Server
+The AYS server automates the full lifecycle of the cloud infrastructure and applications it manages, from deployment, monitoring, scaling and self-healing to uninstalling.
 
-It combines functions such as:
+### AYS Clients
+Interaction with the AYS server is done through the AYS RESTful APIs, the Python client, the command-line client for Linux, or the AYS Cockpit, which is web interface.
+
+AYS combines functions such as:
 
 - **Package Management** like Ubuntu's `apt-get`
 - **Service Management** like Ubuntu's `service`
@@ -28,11 +33,8 @@ A service is an abstraction for almost anything:
 
 We use only one command `ays` to control everything:
 
-- Convert a blueprint to one or more AYS service instances by executing `ays blueprint`
-- Configure all dependencies of a given service by executing `ays init` on the AYS repository of the service
-- Install a service by executing `ays install`
-- Start all services: `ays start`
-- Stop all services: `ays stop`
+- Convert a blueprint to one or more AYS services by executing `ays repo blueprint`, which will configure all dependencies of each service.
+- Install services by executing `ays action install`
 - check `ays --help` for a complete list of available commands
 
 

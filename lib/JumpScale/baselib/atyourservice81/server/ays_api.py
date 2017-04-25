@@ -393,8 +393,7 @@ async def executeBlueprint(request, blueprint, repository):
     except j.exceptions.NotFound as e:
         return json({'error':e.message}, 404)
 
-    bp = None
-    blueprints = repo.blueprints + repo.blueprintsDisabled
+    blueprints = repo.blueprints
     for item in blueprints:
         if item.name == blueprint:
             bp = item
@@ -428,20 +427,23 @@ async def updateBlueprint(request, blueprint, repository):
     except jsonschema.ValidationError as e:
         return text('Bad Request Body', 400)
 
-
-    name = inputs['name']
-
+    name = blueprint
+    new_name = inputs['name']
     names = [bp.name for bp in repo.blueprints]
     names.extend([bp.name for bp in repo.blueprintsDisabled])
     if name not in names:
         return json({'error':"blueprint with the name %s not found" % name}, 404)
-
+    # write content to the old file, then rename to the new name
     blueprint_path = j.sal.fs.joinPaths(repo.path, 'blueprints', name)
     blueprint = repo.blueprintGet(blueprint_path)
-    content = j.data.serializer.yaml.dumps(inputs['content'])
-    blueprint.content = content
+    content = inputs['content']
+    blueprint.content =  j.data.serializer.yaml.dumps(inputs['content'])
+    blueprint.name = new_name
     j.sal.fs.writeFile(blueprint_path, content)
-
+    # Rename the file
+    new_path = j.sal.fs.joinPaths(repo.path, 'blueprints', new_name)
+    j.sal.fs.renameFile(blueprint_path, new_path)
+    blueprint = repo.blueprintGet(new_path)
     return json(blueprint_view(blueprint), 200)
 
 async def deleteBlueprint(request, blueprint, repository):

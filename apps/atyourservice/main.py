@@ -1,3 +1,9 @@
+# Click library has some problems with python3 when it comes to unicode: http://click.pocoo.org/5/python3/#python3-surrogates
+# to fix this we need to set the environ variables to export the locales
+import os
+os.environ['LC_ALL'] = 'C.UTF-8'
+os.environ['LANG'] = 'C.UTF-8'
+
 import click
 import logging
 from JumpScale import j
@@ -13,7 +19,7 @@ try:
     from JumpScale.baselib.atyourservice81.server.app import app as sanic_app
 except:
     print("needs:\npip3 install sanic==0.3.0")
-    j.do.execute("pip3 install sanic")
+    j.do.execute("pip3 install sanic==0.3.0")
     from JumpScale.baselib.atyourservice81.server.app import app as sanic_app
 
 print("to see api:http://localhost:5000/")

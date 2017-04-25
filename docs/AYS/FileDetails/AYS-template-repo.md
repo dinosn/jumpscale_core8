@@ -4,22 +4,8 @@ AYS actor template repositories contain all the metadata defining the lifecycle 
 
 An example is [ays_jumpscale8](https://github.com/Jumpscale/ays_jumpscale8), defining the full life cycle of all JumpScale services.
 
-You can configure which AYS template repositories to use in a configuration file:
-
-- Edit the file `/optvar/hrd/system/atyourservice.hrd`
-- Add a new section for every metadata repository you want to add:
-
-```shell
-metadata.jumpscale             =
-    branch:'master',
-    url:'https://github.com/Jumpscale/ays_jumpscale8',
-
-metadata.openvcloud        =
-    branch: 'master',
-    url:'https://git.aydo.com/0-complexity/openvcloud_ays',
-```
-
-All metadata repositories are cloned as subdirectories of `/opt/code/$type/`:
+You can add AYS template repositories by using provided API or by creating a repo under `/opt/code`.
+The AYS server will clone the repositories as subdirectories of `/opt/code/$type/`:
 
 - Repositories from GitHub are cloned into `/opt/code/github`
 

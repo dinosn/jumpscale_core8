@@ -42,7 +42,7 @@ class AtYourServiceFactory:
             sname = j.tools.cuisine.local.tmux.getSessions()[0]
         except:
             sname = "main"
-        cmd = "cd /opt/code/github/jumpscale/jumpscale_core8/apps/atyourservice;jspython main.py --host {host} --port {port}".format(
+        cmd = "cd /opt/code/github/jumpscale/jumpscale_core8/apps/atyourservice; jspython main.py --host {host} --port {port}".format(
             host=bind, port=port)
         if debug:
             cmd += ' --debug'
