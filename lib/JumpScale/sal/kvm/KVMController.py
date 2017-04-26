@@ -6,14 +6,15 @@ from JumpScale import j
 
 class KVMController:
 
-    def __init__(self, executor=None, base_path=None):
+    def __init__(self, executor=None, base_path=None, keypath='/root/.ssh/libvirt'):
+        self.keypath = keypath
         if executor is None:
             executor = j.tools.executor.getLocal()
         self.executor = executor
         if self.executor.cuisine.id == 'localhost':
             host = 'localhost'
         else:
-            host = '%s@%s' % (getattr(self.executor, '_login', 'root'), self.executor.cuisine.id)
+            host = '%s@%s' % (getattr(self.executor, '_login', 'root'), self.executor.addr)
         self._host = host
         self.user = host.split('@')[0] if '@' in host else 'root'
         self.open()
@@ -28,10 +29,10 @@ class KVMController:
         uri = None
         self.authorized = False
         j.tools.cuisine.local.ssh.keygen(name='libvirt')
-        self.pubkey = j.tools.cuisine.local.core.file_read('/root/.ssh/libvirt.pub')
+        self.pubkey = j.tools.cuisine.local.core.file_read(self.keypath + '.pub')
         if self._host != 'localhost':
             self.authorized = not self.executor.cuisine.ssh.authorize(self.user, self.pubkey)
-            uri = 'qemu+ssh://%s/system?no_tty=1&keyfile=/root/.ssh/libvirt&no_verify=1' % self._host
+            uri = 'qemu+ssh://%s:%s/system?no_tty=1&keyfile=%s&no_verify=1' % (self._host, self.executor.port, self.keypath)
         self.connection = libvirt.open(uri)
         self.readonly = libvirt.openReadOnly(uri)
 

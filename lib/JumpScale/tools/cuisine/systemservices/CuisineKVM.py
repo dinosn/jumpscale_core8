@@ -31,7 +31,7 @@ class CuisineKVM(base):
     @property
     def _controller(self):
         if not self.__controller:
-            self.__controller = j.sal.kvm.KVMController(executor=self.cuisine.executor)
+            self.__controller = j.sal.kvm.KVMController(executor=self.cuisine.executor, keypath=self.cuisine.executor.key_filename)
         return self.__controller
 
     @property

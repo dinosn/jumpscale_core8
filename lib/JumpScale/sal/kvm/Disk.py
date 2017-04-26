@@ -100,11 +100,11 @@ class Disk(BaseKVMComponent):
         """
         Export disk object to xml
         """
-
         disktemplate = self.controller.get_template('disk.xml')
         if self.image_name:
             diskbasevolume = self.controller.executor.cuisine.core.joinpaths(
                 self.controller.base_path, "images", '%s' % self.image_name)
+            diskbasevolume = diskbasevolume.replace('&', '&amp;')
         else:
             diskbasevolume = ''
         diskpath = self.controller.executor.cuisine.core.joinpaths(self.pool.poolpath, '%s.qcow2' % self.name)
