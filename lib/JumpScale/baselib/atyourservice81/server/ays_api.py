@@ -39,8 +39,8 @@ async def addTemplateRepo(request):
     except jsonschema.ValidationError as e:
         return text('Bad Request Body', 400)
 
-    # TODO
-    return json({})
+    j.do.pullGitRepo(url=inputs['url'], branch=inputs['branch'])
+    return json({'message': 'repo added'}, 201)
 
 async def listRepositories(request):
     '''
