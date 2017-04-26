@@ -159,7 +159,7 @@ struct Service {
     period @5 :UInt32;#use j.data.time.getSecondsInHR( to show HR
     isJob @6 :Bool;
     timeout @7 :UInt32;
-
+    errorNr @8 :UInt8; # count the number of time we retry this action and failed.
   }
 
   #list of filter statements, when match call service.executeActionService("processEvent",event)

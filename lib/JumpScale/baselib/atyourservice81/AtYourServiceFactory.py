@@ -78,6 +78,11 @@ class AtYourServiceFactory:
         if not self._cleanupHandle:
             self._cleanupHandle = self.loop.call_soon(self.cleanup)
 
+    async def _stop(self):
+        self.logger.info("stopping AtYourService")
+        to_wait = [repo.stop() for repo in self.aysRepos.list()]
+        await asyncio.wait(to_wait)
+
     @property
     def actorTemplates(self):
         templates = []

@@ -1,19 +1,17 @@
 from JumpScale import j
 from JumpScale.baselib.jobcontroller.SourceLoader import SourceLoader
 from JumpScale.core.errorhandling.ErrorConditionObject import ErrorConditionObject
-import importlib
-import types
 import colored_traceback
 import pygments.lexers
 import cProfile
 from contextlib import contextmanager
-import sys
 import asyncio
 import functools
 import logging
 import traceback
 
 colored_traceback.add_hook(always=True)
+
 
 def _execute_cb(job, future):
     """
@@ -30,26 +28,21 @@ def _execute_cb(job, future):
         action_name = job.model.dbobj.actionName
         if action_name in job.service.model.actions:
             service_action_obj = job.service.model.actions[action_name]
-        if action_name in job.service.model.actionsRecurring and service_action_obj:
-            # if the action is a reccuring action, save last execution time in model
             service_action_obj.lastRun = j.data.time.epoch
+
     exception = None
-    futurecancelled = False
     try:
         exception = future.exception()
-    except:  # CancelledError
-        futurecancelled = True
-        job.logger.info("****Future was cancelled")
-        job.state = 'error'
-        job.model.dbobj.state = 'error'
-        job.save()
+    except asyncio.CancelledError as err:
+        exception = err
+        job.logger.error("{} has been cancelled".format(job))
 
-    if exception is not None or futurecancelled:
+    if exception is not None:
         job.state = 'error'
         job.model.dbobj.state = 'error'
         if service_action_obj:
             service_action_obj.state = 'error'
-        if job.service:
+            service_action_obj.errorNr += 1
             job.service.model.dbobj.state = 'error'
 
         ex = exception if exception is not None else TimeoutError()

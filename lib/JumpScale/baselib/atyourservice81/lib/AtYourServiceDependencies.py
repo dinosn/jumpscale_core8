@@ -18,13 +18,16 @@ def build_nodes(repo):
     return all_nodes
 
 
-def create_graphs(repo, all_nodes):
+def create_graphs(repo, all_nodes, to_execute):
     """
     Create a depency graphs base of the consumption between services and actions
+    @param: repo, AtYourServiceRepo object
+    @param: all_nodes, all nodes from the repo
+    @param: to_execute, sub set of all node that need to be executed
     """
     nodes = set()
 
-    for service, actions_chain_list in repo.findScheduledActions().items():
+    for service, actions_chain_list in to_execute.items():
         for actions in actions_chain_list:
             actions.reverse()
 

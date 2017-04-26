@@ -1,8 +1,5 @@
 from JumpScale import j
 from JumpScale.baselib.atyourservice81.lib.Recurring import RecurringTask
-
-import capnp
-import time
 import asyncio
 
 class Service:
@@ -84,15 +81,13 @@ class Service:
 
         # actions
         for action in actor.model.dbobj.actions:
-            actimeout = action.timeout
-
             self.model.actionAdd(
                 name=action.name,
                 key=action.actionKey,
                 period=action.period,
                 log=action.log,
                 isJob=action.isJob,
-                timeout=actimeout
+                timeout=action.timeout
             )
 
         # events
@@ -445,7 +440,7 @@ class Service:
         for role, consumers_list in self.consumers.items():
             for consumer in consumers_list:
                 if action == "" or action in consumer.model.actionsState.keys():
-                    if consumerRole == "*" or consumer.model.role in consmersRole:
+                    if consumerRole == "*" or consumer.model.role in consumerRole:
                         consumers.add(consumer)
                 consumers = consumer.getConsumersRecursive(
                     consumers=consumers, callers=callers, action=action, consumerRole=consumerRole)
