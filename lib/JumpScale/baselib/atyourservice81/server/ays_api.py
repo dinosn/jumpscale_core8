@@ -2,7 +2,6 @@ import json as JSON
 from sanic.response import json, text
 import jsonschema
 from jsonschema import Draft4Validator
-import asyncio
 import capnp
 
 from JumpScale.baselib.atyourservice81.server.views import service_view
@@ -11,8 +10,9 @@ from JumpScale.baselib.atyourservice81.server.views import actor_view
 from JumpScale.baselib.atyourservice81.server.views import blueprint_view
 from JumpScale.baselib.atyourservice81.server.views import template_view
 from JumpScale.baselib.atyourservice81.server.views import repository_view
-
 from JumpScale import j
+
+logger = j.logger.get('j.ays.sanic')
 
 Blueprint_schema = JSON.load(open(j.sal.fs.joinPaths(j.sal.fs.getParent(__file__),'schema/Blueprint_schema.json')))
 Repository_schema = JSON.load(open(j.sal.fs.joinPaths(j.sal.fs.getParent(__file__),'schema/Repository_schema.json')))
@@ -39,8 +39,8 @@ async def addTemplateRepo(request):
     except jsonschema.ValidationError as e:
         return text('Bad Request Body', 400)
 
-    # TODO
-    return json({})
+    j.do.pullGitRepo(url=inputs['url'], branch=inputs['branch'])
+    return json({'message': 'repo added'}, 201)
 
 async def listRepositories(request):
     '''
@@ -214,35 +214,23 @@ async def createRun(request, repository):
     using the 'GET /ays/repository/{repository}/aysrun/{aysrun_key}' endpoint
     It is handler for POST /ays/repository/<repository>/aysrun
     '''
-    def cb(future):
-        # TODO: request to callback_url
-        exception = future.exception()
-        if exception is not None:
-            print("error during execution of the run")
-            print(exception)
-
     try:
         repo = get_repo(repository)
     except j.exceptions.NotFound as e:
-        return json({'error':e.message}, 404)
+        return json({'error': e.message}, 404)
 
     simulate = j.data.types.bool.fromString(request.args.get('simulate', 'False'))
-    callback_url = request.args.get('callback_url', None)
 
     try:
-        run = repo.runCreate()
+        to_execute = repo.findScheduledActions()
+        run = repo.runCreate(to_execute)
         run.save()
         if not simulate:
-            future = asyncio.ensure_future(run.execute())
-            future.add_done_callback(cb)
-
+            await repo.run_scheduler.add(run)
         return json(run_view(run), 200)
 
     except j.exceptions.Input as e:
         return json({'error': e.msgpub}, 500)
-    except Exception as e:
-        raise e
-        # return json({'error':"Unexpected error: {}".format(str(e))}, 500)
 
 async def getRun(request, aysrun, repository):
     '''

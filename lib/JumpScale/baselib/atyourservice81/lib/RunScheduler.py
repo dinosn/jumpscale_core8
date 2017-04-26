@@ -4,6 +4,15 @@ from JumpScale import j
 NORMAL_RUN_PRIORITY = 1
 ERROR_RUN_PRIORITY = 10
 
+RETRY_DELAY = {
+    1: 10,  # 30sec
+    2: 60,  # 1min
+    3: 300,  # 5min
+    4: 600,  # 10min
+    5: 1800,  # 30min
+    6: 1800,  # 30min
+}  # total: 1h 16min 30sec
+
 
 class RunScheduler:
     """
@@ -17,61 +26,137 @@ class RunScheduler:
     def __init__(self, repo):
         self.logger = j.logger.get("j.ays.RunScheduler")
         self.repo = repo
-        self._loop = repo._loop
         self.queue = asyncio.PriorityQueue(maxsize=0)
+        self.retries = []
+        self._accept = False
         self.is_running = False
 
+    def _pending_run(self):
+        if self.queue.empty():
+            to_execute = self.repo.findScheduledActions()
+            if len(to_execute) <= 0:
+                return None
+            return self.repo.runCreate(to_execute)
+
     async def start(self):
+        """
+        starts the run scheduler and begin whating the run queue.
+        """
         self.logger.info("{} started".format(self))
         if self.is_running:
             return
 
         self.is_running = True
+        self._accept = True
         while self.is_running:
-            _, run = await self.queue.get()
-            if not self.is_running:
-                break
+
+            try:
+                _, run = await asyncio.wait_for(self.queue.get(), timeout=10)
+            except asyncio.TimeoutError:
+                # this allow to exit the loop when stopped is asked.
+                # without the timeout the queue.get blocks forever
+                if not self._accept:
+                    break
+                # while we are idleing, let's see if we have some actions
+                # that are schedule and that could have been unblocked by a rety.
+                run = self._pending_run()
+                if run is None:
+                    continue
 
             try:
                 await run.execute()
+            except:
+                # exception is handle in the job directly,
+                # catch here to not interrupt the loop
+                pass
             finally:
                 self.queue.task_done()
 
+        self.is_running = False
         self.logger.info("{} stopped".format(self))
 
     async def stop(self, timeout=30):
-        self.is_running = False
+        """
+        stops the run scheduler
+        When the run scheduler is stopped you can't add send new run to it
+        @param timout: number of second we wait for the current run to finish before force stopping execution.
+
+        """
+        self._accept = False
         self.logger.info("{} stopping...".format(self))
+
         try:
-            await asyncio.wait_for(self.queue.join(), timeout=timeout, loop=self._loop)
+            # wait for runs in the queue and all retries actions
+            to_wait = [self.queue.join(), *self.retries]
+            await asyncio.wait(to_wait, timeout=timeout, loop=self.repo._loop)
         except asyncio.TimeoutError:
             self.logger.warning("stop timeout reach for {}. possible run interrupted".format(self))
 
-    async def add(self, run):
+    async def add(self, run, priority=NORMAL_RUN_PRIORITY):
         """
         add a run to the queue of run to be executed
+        @param priority: one of NORMAL_RUN_PRIORITY or ERROR_RUN_PRIORITY
+                         runs added with NORMAL_RUN_PRIORITY will always be executed before
+                         the ones added with ERROR_RUN_PRIORITY
         """
-        if not self.is_running:
-            raise j.exceptions.RuntimeError("Trying to add a run to a stopped run scheduler ({})".format(self))
+        if priority not in [NORMAL_RUN_PRIORITY, ERROR_RUN_PRIORITY]:
+            raise j.exceptions.Input("priority should {} or {}, {} given".format(
+                             NORMAL_RUN_PRIORITY,
+                             ERROR_RUN_PRIORITY,
+                             priority))
+
+        if not self._accept:
+            raise j.exceptions.RuntimeError("{} is stopping, can't add new run to it".format(self))
 
         self.logger.debug("add run {} to {}".format(run.model.key, self))
-        await self.queue.put((NORMAL_RUN_PRIORITY, run))
+        await self.queue.put((priority, run))
+
+    async def retry(self, service, action_name):
+        """
+        Retry to executed a failed job from a run.
+        The job will be rescheduled with increasing delay till it succeed or its error level reach 7.
+        @param service: service object
+        @param action_name: name of the action to retry
+        """
+        async def do_retry(service, action_name):
+            service_key = service.model.key
+            action = service.model.actions[action_name]
+
+            if action.state != 'error':
+                self.logger.info("no need to retry action {}, state not error".format(action))
+                return
+
+            if list(RETRY_DELAY.keys())[-1] < action.errorNr:
+                self.logger.info("action {} reached max retry, not rescheduling again.".format(action))
+                return
+
+            delay = RETRY_DELAY[action.errorNr]
+            # make sure we don't reschedule with a delay smaller then the timeout of the job
+            if action.timeout > 0 and action.timeout > delay:
+                delay = action.timeout
+            self.logger.info("reschedule {} from {} in {}sec".format(action_name, service, delay))
+
+            await asyncio.sleep(delay)
+
+            # make sure the service has not been deleted while we were waiting
+            try:
+                service = self.repo.serviceGet(key=service_key)
+            except j.exceptions.NotFound:
+                self.logger.info("don't retry service ({}) has been deleted".format(service_key))
+                return
+
+            # make sure the action is still in error state before rescheduling it
+            action = service.model.actions[action_name]
+            if action.state != 'error':
+                self.logger.info("don't retry action {} not in error state anymore".format(action_name))
+                return
+
+            run = self.repo.runCreate({service: [[action_name]]})
+            self.logger.debug("add error run {} to {}".format(run.model.key, self))
+            await self.repo.run_scheduler.add(run, ERROR_RUN_PRIORITY)
+
+        # add the rery to the event loop
+        self.retries.append(asyncio.ensure_future(do_retry(service, action_name)))
 
     def __repr__(self):
         return "RunScheduler<{}>".format(self.repo.name)
-
-#
-# async def main(repo):
-#     scheduler = RunScheduler(repo, repo._loop)
-#     asyncio.ensure_future(scheduler.start())
-#
-#     run = repo.runCreate()
-#     await scheduler.add(run)
-#     await scheduler.stop()
-#
-# if __name__ == '__main__':
-#     from JumpScale import j
-#     j.atyourservice._start()
-#     repo = j.atyourservice.aysRepos.get('/opt/code/cockpit_repos/grid')
-#     repo._loop.run_until_complete(main(repo))
-#     from IPython import embed;embed()

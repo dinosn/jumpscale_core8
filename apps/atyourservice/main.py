@@ -7,7 +7,6 @@ os.environ['LANG'] = 'C.UTF-8'
 import click
 import logging
 from JumpScale import j
-import asyncio
 
 try:
     import jsonschema
@@ -44,8 +43,11 @@ def main(host, port, debug=False):
         j.atyourservice.debug = debug
         j.atyourservice._start(loop=loop)
 
+    async def stop_ays(sanic, loop):
+        await j.atyourservice._stop()
+
     # start server
-    sanic_app.run(debug=debug, host=host, port=port, workers=1, before_start=init_ays)
+    sanic_app.run(debug=debug, host=host, port=port, workers=1, before_start=init_ays, after_stop=stop_ays)
 
 
 if __name__ == '__main__':

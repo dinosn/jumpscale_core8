@@ -9,6 +9,7 @@ from JumpScale.baselib.atyourservice81.lib.AtYourServiceDependencies import crea
 from JumpScale.baselib.atyourservice81.lib.AtYourServiceDependencies import get_task_batches
 from JumpScale.baselib.atyourservice81.lib.AtYourServiceDependencies import create_job
 from JumpScale.baselib.atyourservice81.lib.RunScheduler import RunScheduler
+
 import asyncio
 from collections import namedtuple
 
@@ -36,7 +37,7 @@ class AtYourServiceRepoCollection:
                         repo = AtYourServiceRepo(path)
                         self._repos[repo.path] = repo
                     except Exception as e:
-                        self.logger.error("can't load repo at {}: {}".format(path, str(e)))
+                        self.logger.exception("can't load repo at {}: {}".format(path, str(e)))
                         if j.atyourservice.debug:
                             raise
 
@@ -146,8 +147,10 @@ class AtYourServiceRepo():
         self._db = None
         self.no_exec = False
         self._loop = asyncio.get_event_loop()
+
         self.run_scheduler = RunScheduler(self)
-        self._run_scheduler_task = asyncio.ensure_future(self.run_scheduler.start())
+        self._run_scheduler_task = self._loop.create_task(self.run_scheduler.start())
+
         j.atyourservice._loadActionBase()
 
         self._load_services()
@@ -174,19 +177,22 @@ class AtYourServiceRepo():
 
                 Service.init_from_fs(aysrepo=self, path=service_path)
 
+    async def stop(self):
+        """
+        stop run scheduler and wait for it to complete current runs and reties
+        """
+        if j.atyourservice.debug:
+            await self.run_scheduler.stop(timeout=3)
+        else:
+            await self.run_scheduler.stop(timeout=30)
+            await self._run_scheduler_task
+
     async def delete(self):
 
         # stop run scheduler, wait for 30 sec
         await self.run_scheduler.stop(timeout=30)
         if self._run_scheduler_task:
             self._run_scheduler_task.cancel()
-            try:
-                # we wait here to make sure to give the time to the task to cancel itself.
-                await self._run_scheduler_task
-            except asyncio.CancelledError:
-                #  it should pass here, the canceld future should raise this exception
-                pass
-        self.run_scheduler = None
 
         # removing related actors, services , runs, jobs and the model itslef.
         self.db.actors.destroy()
@@ -568,7 +574,8 @@ class AtYourServiceRepo():
         jobs = set()
         for key in self.db.services.list():
             for job in j.core.jobcontroller.db.jobs.find(serviceKey=key):
-                jobs.add(job)
+                if job:
+                    jobs.add(job)
         return list(jobs)
 
     def findScheduledActions(self):
@@ -576,30 +583,47 @@ class AtYourServiceRepo():
         Walk over all servies and look for action with state scheduled.
         It then creates actions chains for all schedules actions.
         """
+        def is_producer_in_error(service, action):
+            for producers in service.producers.values():
+                for producer in producers:
+                    if action in producer.model.actions and producer.model.actions[action].state == 'error':
+                        return True
+            return False
+
         result = {}
         for service in self.services:
             for action, obj in service.model.actions.items():
+                # skip non job actions
                 if not obj.isJob:
                     continue
 
+                # never schedule event actions
                 if action in service.model.actionsEvents:
                     continue
 
-                if str(obj.state) in ['scheduled', 'error']:
+                # this allow to never schedule something that is not possible to execute at the moment
+                # if this branch of the dependency tree is in error state, we skip it until
+                # the automatic error runs fixes it.
+
+                if is_producer_in_error(service, action):
+                    continue
+
+                if str(obj.state) == "scheduled":
                     if service not in result:
                         result[service] = list()
                     action_chain = list()
                     service._build_actions_chain(action, ds=action_chain)
                     action_chain.reverse()
                     result[service].append(action_chain)
+
         return result
 
-    def runCreate(self, debug=False, profile=False):
+    def runCreate(self, to_execute, debug=False, profile=False):
         """
         Create a run from all the scheduled actions in the repository.
         """
         all_nodes = build_nodes(self)
-        nodes = create_graphs(self, all_nodes)
+        nodes = create_graphs(self, all_nodes, to_execute)
         run = j.core.jobcontroller.newRun(repo=self.path)
 
         for bundle in get_task_batches(nodes):
