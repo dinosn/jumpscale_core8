@@ -33,10 +33,12 @@ class RunScheduler:
 
     def _pending_run(self):
         if self.queue.empty():
-            to_execute = self.repo.findScheduledActions()
-            if len(to_execute) <= 0:
-                return None
-            return self.repo.runCreate(to_execute)
+            if self.repo._mark_for_autocreate is True:
+                self.repo._mark_for_autocreate = False
+                to_execute = self.repo.findScheduledActions()
+                self.logger.debug("repo {} is marked to auto create runs, will execute: {}".format(self.repo, to_execute))
+                if len(to_execute) > 0:
+                    return self.repo.runCreate(to_execute)
 
     async def start(self):
         """
@@ -131,6 +133,7 @@ class RunScheduler:
                 return
 
             delay = RETRY_DELAY[action.errorNr]
+            self.repo._mark_for_autocreate = True
             # make sure we don't reschedule with a delay smaller then the timeout of the job
             if action.timeout > 0 and action.timeout > delay:
                 delay = action.timeout
