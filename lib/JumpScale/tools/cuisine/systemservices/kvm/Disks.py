@@ -19,12 +19,11 @@ class Disks:
         disk = j.sal.kvm.Disk(self._controller, pool, name, size, image_name)
         disk.create()
 
-    def download_image(self, url, overwrite=False, name=None):
+    def download_image(self, url, overwrite=False):
         """
         download an image from an url and store it on the system to be used a base image for disks
         """
-        if name is None:
-            name = url.split('/')[-1]
+        name = url.split('/')[-1]
         path = j.sal.fs.joinPaths(self._controller.base_path, 'images', name)
         self._controller.executor.cuisine.core.file_download(url, path, overwrite=True)
 
