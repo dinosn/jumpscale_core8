@@ -118,7 +118,7 @@ appDocker = service.producers['app_docker'][0]
 ```
 ## Blueprints
 A blueprint is a YAML file that is used for interacting with AYS. It is responsible for specifying the deployment of a specific application. The required services instances are specified in this file and specifies their interactions. Blueprints are also used to indicate which actions should AYS execute.<br><br>
-Create a <a href = "www.yaml.org/start.html">YAML</a> file inside the blueprints directory. The file specifies the instances that need to be created from every actor as well as the actions that need to be executed, for example the `install()` function.
+Create a [YAML](http://yaml.org/start.html) file inside the blueprints directory. The file specifies the instances that need to be created from every actor as well as the actions that need to be executed, for example the `install()` function.
 ```
 node.packet.net__kvm:
     client: 'main'
