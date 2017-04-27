@@ -1,4 +1,4 @@
-# Jumpscale Config Files
+# Jumpscale config files
 
 Are in YAML format In this section we list the known config files (there should be no others). All other configurations are done in AYS yaml files
 
@@ -70,49 +70,6 @@ filter:
     - 'j.application'
 
 ```
-## whoami.hrd
-
-```
-email                   =
-fullname                =
-git.login               =
-git.passwd              =
-```
-
-## system redis
-
-```
-redis.addr =
-redis.port =
-redis.passwd =
-```
-
-can all be left empty, or file does not have to exist
-
-## realitydb
-
-```
-realitydb.addr =
-realitydb.port =
-realitydb.login =
-realitydb.passwd =
-```
-
-can all be left empty, or file does not have to exist
-
-## statsdb
-
-```
-statsdb.addr =
-statsdb.port =
-statsdb.login =
-statsdb.passwd =
-statsdb.interval = 60
-```
-
-interval is every how many sec aggregation is being done
-
-can all be left empty, or file does not have to exist
 
 ```
 !!!
