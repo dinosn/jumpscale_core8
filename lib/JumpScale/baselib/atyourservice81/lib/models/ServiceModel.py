@@ -151,7 +151,7 @@ class ServiceModel(ActorServiceBaseModel):
 
         res = self.eventFiltersFind(command=command, channel=channel, actions=actions, tags=tags)
         if len(res) == 0:
-            eventsFilter = ModelCapnp.EventFilter.new_message()
+            eventsFilter = ModelCapnp.Service.EventFilter.new_message()
             self.addSubItem('eventFilters', eventsFilter)
         elif len(res) == 1:
             eventsFilter = res[0]
@@ -171,8 +171,10 @@ class ServiceModel(ActorServiceBaseModel):
         if not j.data.types.list.check(actions):
             raise j.exceptions.Input('actions for eventFilter should be a list')
 
-        for action in actions:
-            eventsFilter.actions.append(action.lower())
+        eventsFilter.init('actions', len(actions))
+        for i, action in enumerate(actions):
+            eventsFilter.actions[i] = action
+
         if len(actions) > 0:
             changed = True
 
