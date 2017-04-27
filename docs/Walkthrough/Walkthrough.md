@@ -17,8 +17,8 @@ Complete walkthrough (maybe rethink the name)
 * [Working with Docker using the Docker SAL](SAL/Docker.md)
 * [Installing Caddy using Cuisine](Cuisine/install_caddy_on_docker.md)
 * [Installing Docker and Caddy with AYS](AYS/Install_docker_and_caddy.md)
-* [Creating a data model](/Models/Creating_data_model.md)
-* [Migrating data from gogs database into redis](/Models/Migrating_data_from_gogs.md)
+* [Creating a data model](Models/Creating_data_model.md)
+* [Migrating data from gogs database into redis](Models/Migrating_data_from_gogs.md)
 
 
 ```
