@@ -31,15 +31,6 @@ class RunScheduler:
         self._accept = False
         self.is_running = False
 
-    def _pending_run(self):
-        if self.queue.empty():
-            if self.repo._mark_for_autocreate is True:
-                self.repo._mark_for_autocreate = False
-                to_execute = self.repo.findScheduledActions()
-                self.logger.debug("repo {} is marked to auto create runs, will execute: {}".format(self.repo, to_execute))
-                if len(to_execute) > 0:
-                    return self.repo.runCreate(to_execute)
-
     async def start(self):
         """
         starts the run scheduler and begin whating the run queue.
@@ -59,11 +50,7 @@ class RunScheduler:
                 # without the timeout the queue.get blocks forever
                 if not self._accept:
                     break
-                # while we are idleing, let's see if we have some actions
-                # that are schedule and that could have been unblocked by a rety.
-                run = self._pending_run()
-                if run is None:
-                    continue
+                continue
 
             try:
                 await run.execute()
@@ -133,7 +120,6 @@ class RunScheduler:
                 return
 
             delay = RETRY_DELAY[action.errorNr]
-            self.repo._mark_for_autocreate = True
             # make sure we don't reschedule with a delay smaller then the timeout of the job
             if action.timeout > 0 and action.timeout > delay:
                 delay = action.timeout
