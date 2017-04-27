@@ -1,4 +1,4 @@
-#__Migrating data from gogs:__
+# Migrating data from gogs
 
 This is a walk through of Migrating data from gogs database into redis   
 jumpscale Model and into redis using the  gogs factory and provided tools.
@@ -9,13 +9,13 @@ The commands to run are:
  - To fetch the users you can use the gogs factory by running:
    ```python
    j.clients.gogs.getUsersFromPSQL()
-   ``` 
+   ```
 
  - To fetch the issues you can use the gogs factory by running:
    ```python
    j.clients.gogs.getIssuesFromPSQL()
-   ``` 
- 
+   ```
+
  - To fetch the repos you can use the gogs factory by running:
    ```python
    j.clients.gogs.getReposFromPSQL()
@@ -25,9 +25,9 @@ The commands to run are:
    ```python
    j.clients.gogs.getOrgsFromPSQL()
    ```
-   
-   
-Now that you have the data migrated you can view  it using the issuemanager tool, 
+
+
+Now that you have the data migrated you can view  it using the issuemanager tool,
 a wrapper around the model to allow searching using specific fields.
 
 To use it run:
