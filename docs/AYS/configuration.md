@@ -29,17 +29,6 @@ redis:
   unixsocket: /tmp/redis.sock
 ```
 
-
-## For AYS metadata, you can add as many domains as you need
-```toml
-
-[[metadata]]
-[metadata.jumpscale]
-url = "https://github.com/Jumpscale/ays_jumpscale8"
-branch = "master"
-
-```
-
 ## For redis config, it supports two mode, TCP or UNIX socket.
 
 Here are two example of configuration file.
