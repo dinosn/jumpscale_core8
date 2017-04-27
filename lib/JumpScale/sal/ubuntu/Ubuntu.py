@@ -72,13 +72,13 @@ class Ubuntu:
                 self.apt_install_check(packagename, cmdname)
         else:
             packagename = packagenames
-            result, out = self._local.execute("which %s" % cmdname, False)
-            if result != 0:
+            rc, out, err = self._local.execute("which %s" % cmdname, False)
+            if rc != 0:
                 self.apt_install(packagename)
             else:
                 return
-            result, out = self._local.execute("which %s" % cmdname, False)
-            if result != 0:
+            rc, out, err = self._local.execute("which %s" % cmdname, False)
+            if rc != 0:
                 raise j.exceptions.RuntimeError(
                     "Could not install package %s and check for command %s." % (packagename, cmdname))
 
@@ -295,8 +295,8 @@ stop on runlevel [016]
         path.write_text("deb %s\n" % url)
 
     def whoami(self):
-        rc, result = self._local.execute("whoami")
-        return result.strip()
+        rc, out, err = self._local.execute("whoami")
+        return out.strip()
 
     def checkroot(self):
         if self.whoami() != "root":
@@ -315,5 +315,5 @@ stop on runlevel [016]
     @property
     def version(self):
         cmd = "cat /etc/lsb-release | grep RELEASE"
-        rc, result = self._local.executeInteractive(cmd)
-        return (result.split("=")[1]).strip()
+        rc, out, err = self._local.execute(cmd)
+        return (out.split("=")[1]).strip()
