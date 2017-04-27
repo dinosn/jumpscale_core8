@@ -150,7 +150,6 @@ class AtYourServiceRepo():
 
         self.run_scheduler = RunScheduler(self)
         self._run_scheduler_task = self._loop.create_task(self.run_scheduler.start())
-        self._mark_for_autocreate = False
 
         j.atyourservice._loadActionBase()
 
