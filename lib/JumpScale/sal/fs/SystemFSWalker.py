@@ -195,8 +195,8 @@ class SystemFSWalker:
         # provided
         root = os.path.abspath(root)
 
-        # if not j.sal.fs.isDir(root):
-            # raise ValueError('Root path for walk should be a folder, {}'.format(root))
+        if not j.sal.fs.isDir(root):
+            raise ValueError('Root path for walk should be a folder, {}'.format(root))
 
         # print "ROOT OF WALKER:%s"%root
 

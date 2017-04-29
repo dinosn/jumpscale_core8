@@ -104,8 +104,8 @@ class AtYourServiceRepoCollection:
         if git_url:
             j.tools.cuisine.local.core.run(
                 'cd {path};git remote add origin {url}'.format(path=path, url=git_url))
-        # j.sal.nettools.download(
-            # 'https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore', j.sal.fs.joinPaths(path, '.gitignore'))
+        j.sal.nettools.download(
+            'https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore', j.sal.fs.joinPaths(path, '.gitignore'))
 
         # TODO lock
         self._repos[path] = AtYourServiceRepo(path=path)
