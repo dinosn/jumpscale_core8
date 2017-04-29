@@ -7,7 +7,7 @@ app = j.tools.cuisine._getBaseAppClass()
 class CuisineCaddy(app):
 
     NAME = "caddy"
-    defaultfeatures = ['filemanager', 'cors']
+    defaultfeatures = ['http.filemanager', 'http.cors']
 
     def _init(self):
         self.BUILDDIR_ = self.replace("$BUILDDIR/caddy")
@@ -28,10 +28,10 @@ class CuisineCaddy(app):
 
         features = ",".join(features)
         if self.core.isMac:
-            caddy_url = 'https://caddyserver.com/download/build?os=darwin&arch=amd64&features=%s' % features
+            caddy_url = 'https://caddyserver.com/download/darwin/amd64?plugins=%s' % features
             dest = '$TMPDIR/caddy_darwin_amd64_custom.zip'
         else:
-            caddy_url = 'https://caddyserver.com/download/build?os=linux&arch=amd64&features=%s' % features
+            caddy_url = 'https://caddyserver.com/download/linux/amd64?plugins=%s' % features
             dest = '$TMPDIR/caddy_linux_amd64_custom.tar.gz'
         self.cuisine.core.file_download(caddy_url, dest)
         self.cuisine.core.run('cd $TMPDIR && tar xvf %s' % dest)

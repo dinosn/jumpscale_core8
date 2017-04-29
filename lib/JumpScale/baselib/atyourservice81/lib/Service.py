@@ -581,7 +581,6 @@ class Service:
     async def processEvent(self, channel=None, command=None, secret=None, tags={}, payload=None):
         coros = []
         for event_filter in self.model.dbobj.eventFilters:
-
             if channel is not None and channel != 'all' and channel != event_filter.channel:
                 continue
             if command is not None and command != event_filter.command:
