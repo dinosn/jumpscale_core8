@@ -7,6 +7,10 @@ It has been replaced by yaml for actor template Configuration and capnp for sche
 ## AsyncIO
 We have replaced to usage of Multiprocessing with asyncio.
 
+
+## Upgrading your templates from 8.1 to 8.2
+you can use `j.atyourservice._upgradeTemplate2yaml` tool to upgrade templates from the old hrd version.
+
 ```
 !!!
 title = "Whatsnew 8.2"
