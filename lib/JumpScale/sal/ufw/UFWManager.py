@@ -161,7 +161,7 @@ class UFWManager:
         return status == 'active'
 
     def _load(self):
-        rc, status = self._local.execute('ufw status numbered')
+        rc, status, err = self._local.execute('ufw status numbered')
         self._rules = []
         for line in status.splitlines():
             line = line.strip()
