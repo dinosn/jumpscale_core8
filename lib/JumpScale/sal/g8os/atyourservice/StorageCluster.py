@@ -1,20 +1,6 @@
 from JumpScale import j
 from JumpScale.sal.g8os.abstracts import AYSable
 
-def _node_name(node):
-    def get_nic_hwaddr(nics, name):
-        for nic in nics:
-            if nic['name'] == name:
-                return nic['hardwareaddr']
-
-    defaultgwdev = node.client.bash("ip route | grep default | awk '{print $5}'").get().stdout.strip()
-    nics = node.client.info.nic()
-    if defaultgwdev:
-        macgwdev = get_nic_hwaddr(nics, defaultgwdev)
-    if not macgwdev:
-        raise AttributeError("name not find for node {}".format(node))
-    return macgwdev.replace(":", '')
-
 
 class StorageClusterAys(AYSable):
 
@@ -60,7 +46,7 @@ class StorageClusterAys(AYSable):
             'nrServer': self._obj.nr_server,
             'hasSlave': self._obj.has_slave,
             'diskType': str(self._obj.disk_type),
-            'nodes': [_node_name(node) for node in self._obj.nodes],
+            'nodes': [node.name for node in self._obj.nodes],
         }
         cluster_service = actor.serviceCreate(instance=self._obj.name, args=args)
 
@@ -106,7 +92,7 @@ class ContainerAYS(AYSable):
     def create(self, aysrepo):
         actor = aysrepo.actorGet(self.actor)
         args = {
-            'node': _node_name(self._obj.node),
+            'node': self._obj.node.name,
             'hostname': self._obj.hostname,
             'flist': self._obj.flist,
             # 'initProcesses': ,TODO

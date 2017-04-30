@@ -30,6 +30,21 @@ class Node:
     def client(self):
         return self._client
 
+    @property
+    def name(self):
+        def get_nic_hwaddr(nics, name):
+            for nic in nics:
+                if nic['name'] == name:
+                    return nic['hardwareaddr']
+
+        defaultgwdev = self.client.bash("ip route | grep default | awk '{print $5}'").get().stdout.strip()
+        nics = self.client.info.nic()
+        if defaultgwdev:
+            macgwdev = get_nic_hwaddr(nics, defaultgwdev)
+        if not macgwdev:
+            raise AttributeError("name not find for node {}".format(self))
+        return macgwdev.replace(":", '')
+
     def _eligible_fscache_disk(self, disks):
         """
         return the first disk that is eligible to be used as filesystem cache
