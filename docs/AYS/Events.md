@@ -1,6 +1,6 @@
 # AYS Events
 
-AYS supports events in your services (managed by the `AYSDaemon`)
+AYS supports events in your services (managed by the `AYSDaemon`). When a service registers itself as a listener to some event from another service.
 
 > `ays start` will run the ays daemon
 
@@ -8,10 +8,6 @@ AYS supports events in your services (managed by the `AYSDaemon`)
 Here we have a simple example around two actors `prod`, `cons`, Where `producer` executes a `longjob` and consumer wants to execute some specific action on that event.
 
 ### Actor producer
-
-```yaml
-msg = type:str default:'hello prince'
-```
 
 `actions.py`
 ```python
@@ -41,7 +37,7 @@ For the consumer
 
 ```python
 
-def init(job):
+def init_actions_(job):
     service = job.service
     # SET UP EVENT HANDLERS.
     handlers_map = [('producer_installed', ['on_prod_installed']),
@@ -59,6 +55,9 @@ def on_prod_longjob(job):
     print("************Producer done with the long job")
 
 ```
+> In function `init_actions_` we register the consumer service interest in certain events
+for example when `producer_installed` event is fired from the producer service we want to execute certain actions `on_prod_installed`.  
+```toml
 !!!
 title = "Events"
 date = "2017-04-08"
