@@ -34,7 +34,7 @@ struct Issue {
     creationTime @11 :UInt32;
 }
 ```
- this is stored as `model.capnp` withing the same directory that will contain the models directory as demonstrated
+ this is stored as `model.capnp` within the same directory that will contain the models directory as demonstrated
 ```
 ├── model.capnp
 ├── models
@@ -75,7 +75,7 @@ class OrgModel(base):
 ```
 
  ## Step 3: Create the collection file
- To create the collection , a python file has to be set to allow searching , and listing of the models, as seen bellow:
+ To create the collection , a python file has to be set to allow searching , and listing of the models, as seen below:
 
  ```python
  from JumpScale import j
