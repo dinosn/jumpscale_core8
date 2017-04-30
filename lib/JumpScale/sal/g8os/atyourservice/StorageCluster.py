@@ -1,14 +1,19 @@
 from JumpScale import j
 from JumpScale.sal.g8os.abstracts import AYSable
-from JumpScale.sal.g8os.StorageCluster import StorageCluster
-
 
 def _node_name(node):
-    for nic in node.client.info.nic():
-        for addr in nic['addrs']:
-            if addr['addr'].split('/')[0] == node.addr:
-                return nic['hardwareaddr'].replace(':', '')
-    raise AttributeError("name not find for node {}".format(node))
+    def get_nic_hwaddr(nics, name):
+        for nic in nics:
+            if nic['name'] == name:
+                return nic['hardwareaddr']
+
+    defaultgwdev = node.client.bash("ip route | grep default | awk '{print $5}'").get().stdout.strip()
+    nics = node.client.info.nic()
+    if defaultgwdev:
+        macgwdev = get_nic_hwaddr(nics, defaultgwdev)
+    if not macgwdev:
+        raise AttributeError("name not find for node {}".format(node))
+    return macgwdev.replace(":", '')
 
 
 class StorageClusterAys(AYSable):
