@@ -11,12 +11,12 @@ start an ays service in tmux
 Options:
   -b, --bind TEXT     listening address
   -p, --port INTEGER  listening port
-  --debug             enable debug logging
+  -l, --log TEXT      set log level (error, warning, info, debug)
   --help              Show this message and exit.
 ```
 
 Example:
-`ays start --bind 0.0.0.0 --port 8080 --debug`
+`ays start --bind 0.0.0.0 --port 8080 --log debug`
 
 ## go to your ays repository and deploy an example packet.net blueprint
 

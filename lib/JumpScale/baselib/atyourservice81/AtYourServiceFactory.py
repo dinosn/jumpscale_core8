@@ -26,6 +26,7 @@ class AtYourServiceFactory:
         self._config = None
         self._domains = []
         self.debug = j.core.db.get("atyourservice.debug") == 1
+        self.dev_mode = False
         self.logger = j.logger.get('j.atyourservice')
 
         self.baseActions = {}
@@ -33,24 +34,26 @@ class AtYourServiceFactory:
         self.aysRepos = None
         self._cleanupHandle = None
 
-    def start(self, bind='127.0.0.1', port=5000, debug=False):
+    def start(self, bind='127.0.0.1', port=5000, log='info'):
         """
         start an ays service on your local platform
         """
-        self.logger.info("start ays service, will take 5 sec")
         try:
             sname = j.tools.cuisine.local.tmux.getSessions()[0]
         except:
             sname = "main"
-        cmd = "cd /opt/code/github/jumpscale/jumpscale_core8/apps/atyourservice; jspython main.py --host {host} --port {port}".format(
-            host=bind, port=port)
-        if debug:
-            cmd += ' --debug'
+
+        cmd = "cd /opt/code/github/jumpscale/jumpscale_core8/apps/atyourservice; \
+              jspython main.py --host {host} --port {port} --log {log}".format(
+            host=bind, port=port, log=log)
+        print("Starting AtYourService server in a tmux session")
         rc, out = j.tools.cuisine.local.tmux.executeInScreen(sname, "ays", cmd, reset=True, wait=5)
         if rc > 0:
             raise RuntimeError("Cannot start AYS service")
-        self.logger.debug(out)
-        self.logger.info("go to http://{}:{} to see rest api".format(bind, port))
+
+        if log == 'debug':
+            print("debug logging enabled")
+        print("AYS server running at http://{}:{}".format(bind, port))
         return rc, out
 
     def cleanup(self):

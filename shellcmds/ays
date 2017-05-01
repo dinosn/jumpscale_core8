@@ -384,11 +384,15 @@ def list():
 
 @actor.command()
 @click.option('--name', '-n', default=None, help='name of the actor to update')
-def update(name):
+@click.option('--reschedule', '-r', is_flag=True, default=False, help='reschedule actions in error state after update')
+def update(name, reschedule):
     """
     Update actor to a new version.
     Any change detected in the actor will be propagated to the services and processChange method will be
     called all the way from actor to service instances.
+
+    if the --reschedule option is given, all the action that were in `error` state will remain in error state after the update
+    instead of beeing switched to state changed
     """
     names = []
     if name is None:
@@ -403,7 +407,8 @@ def update(name):
 
     for name in names:
         try:
-            resp = ayscl.api.ays.updateActor(data='', actor=name, repository=_current_repo_name())
+            query_params = {'reschedule': reschedule}
+            resp = ayscl.api.ays.updateActor(data='', actor=name, repository=_current_repo_name(), query_params=query_params)
             print("actor {} updated".format(name))
         except Exception as e:
             print("error during update of actor {}: {}".format(name, _extract_error(e)))
@@ -577,12 +582,12 @@ def show(key, logs):
 @cli.command()
 @click.option('--bind', '-b', default='127.0.0.1', help='listening address')
 @click.option('--port', '-p', default=5000, help='listening port')
-@click.option('--debug', default=False, is_flag=True, help='enable debug logging')
-def start(bind, port, debug):
+@click.option('--log', '-l', default="info", help='set log level (error, warning, info, debug)')
+def start(bind, port, log):
     """
     start an ays service in tmux
     """
-    j.atyourservice.start(bind=bind, port=port, debug=debug)
+    j.atyourservice.start(bind=bind, port=port, log=log)
 # AYS service related group of commands
 
 

@@ -8,8 +8,12 @@ Usage: ays actor update [OPTIONS]
   propagated to the services and processChange method will be called all the
   way from actor to service instances.
 
+  if the `--reschedule` option is given, all the action that were in `error` state will remain in `error` state after the update
+  instead of beeing switched to state `changed`
+
 Options:
   -n, --name TEXT  name of the actor to update
+  -r, --reschedule  reschedule actions in error state after update
   --help           Show this message and exit.
 ```
 

@@ -1,6 +1,7 @@
 from JumpScale import j
 import asyncio
 
+
 class RecurringTask:
     """Execute a job periodicly"""
     def __init__(self, service, action, period, loop=None):
@@ -14,31 +15,44 @@ class RecurringTask:
         self.started = False
 
     async def _run(self):
-        while self.started:
-            self._job =  self.service.getJob(actionName=self.action)
-            await self._job.execute()
+        try:
+            while self.started:
+                # create job
+                self._job = self.service.getJob(actionName=self.action)
 
-            action_info = self.service.model.actions[self.action]
-            elapsed = (j.data.time.epoch - action_info.lastRun)
-            sleep = action_info.period - elapsed
-            if sleep < 0:
-                sleep = 0
-            await asyncio.sleep(sleep)
+                # compute how long we need to sleep before next execution
+                action_info = self.service.model.actions[self.action]
+                elapsed = (j.data.time.epoch - action_info.lastRun)
+                sleep = action_info.period - elapsed
+                if sleep < 0:
+                    sleep = 0
+
+                # wait for right time
+                await asyncio.sleep(sleep)
+
+                # execute
+                await self._job.execute()
+
+                # update last exection time
+                action_info.lastRun = j.data.time.epoch
+
+        except asyncio.CancelledError:
+            self.logger.info("recurring task for {}:{} is cancelled".format(self.service, self.action))
+            if self._job:
+                self._job.cancel()
+            raise
 
     def start(self):
         self.started = True
         self._future = asyncio.ensure_future(self._run(), loop=self._loop)
         return self._future
 
-    async def stop(self):
+    def stop(self):
         self.started = False
         # cancel recurring task
         if self._future:
-            self._future.cancel()
-            self.logger.info("recurring task for {}:{} is cancelled".format(self.service, self.action))
+            self._loop.call_soon_threadsafe(self._future.cancel)
 
-        if self._job:
-            self._job.cancel()
 
 
 if __name__ == '__main__':

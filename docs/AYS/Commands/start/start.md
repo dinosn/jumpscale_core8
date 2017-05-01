@@ -13,7 +13,7 @@ Usage: ays start [OPTIONS]
 Options:
   -b, --bind TEXT     listening address
   -p, --port INTEGER  listening port
-  --debug             enable debug logging
+  -l, --log TEXT      set log level (error, warning, info, debug)
   --help              Show this message and exit.
 ```
 

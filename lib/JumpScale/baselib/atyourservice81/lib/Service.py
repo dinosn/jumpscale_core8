@@ -337,11 +337,7 @@ class Service:
             await service.delete()
 
         # cancel all recurring tasks
-        for k in list(self._recurring_tasks.keys()):
-            try:
-                await self._recurring_tasks[k].stop()
-            except asyncio.CancelledError:
-                del self._recurring_tasks[k]
+        self.stop()
 
         for producers in self.producers.values():
             for producer in producers:
@@ -507,7 +503,7 @@ class Service:
                 return executor
         return j.tools.executor.getLocal()
 
-    def processChange(self, actor, changeCategory, args={}):
+    def processChange(self, actor, changeCategory, args={}, reschedule=False):
         """
         template action change
         categories :
@@ -556,7 +552,8 @@ class Service:
             action_name = changeCategory.split('action_mod_')[1]
             action_actor_pointer = actor.model.actions[action_name]
             service_action_pointer = self.model.actions[action_name]
-            service_action_pointer.state = 'changed'
+            if service_action_pointer.state == 'error' and not reschedule:
+                service_action_pointer.state = 'changed'
             service_action_pointer.actionKey = action_actor_pointer.actionKey
 
             # update the lastModDate of the action object
@@ -768,6 +765,15 @@ class Service:
             task = self._recurring_tasks[name]
             task.stop()
             del self._recurring_tasks[name]
+
+    def stop(self):
+        """
+        stop all recurring action of the services
+        """
+        # cancel all recurring tasks
+        for k in list(self._recurring_tasks.keys()):
+            self._recurring_tasks[k].stop()
+            del self._recurring_tasks[k]
 
     def __eq__(self, service):
         if not service:

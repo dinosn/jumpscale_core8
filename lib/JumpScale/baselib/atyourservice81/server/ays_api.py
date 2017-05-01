@@ -620,7 +620,7 @@ async def getActorByName(request, name, repository):
     try:
         actor = repo.actorGet(name=name)
     except j.exceptions.NotFound as e:
-        json({'error':'actor {} not found'.format(name)}, 404)
+        json({'error': 'actor {} not found'.format(name)}, 404)
 
     return json(actor_view(actor), 200)
 
@@ -633,15 +633,15 @@ async def updateActor(request, name, repository):
     try:
         repo = get_repo(repository)
     except j.exceptions.NotFound as e:
-        return json({'error':e.message}, 404)
+        return json({'error': e.message}, 404)
 
-    template = repo.templateGet(name=name)
     try:
         actor = repo.actorGet(name=name)
-    except:
-        return json({'error':'actor {} not found'.format(name)}, 404)
+    except j.exceptions.NotFound:
+        return json({'error': 'actor {} not found'.format(name)}, 404)
 
-    actor._initFromTemplate(template)
+    reschedule = j.data.types.bool.fromString(request.args.get('reschedule', False))
+    actor.update(reschedule=reschedule)
 
     return json(actor_view(actor), 200)
 

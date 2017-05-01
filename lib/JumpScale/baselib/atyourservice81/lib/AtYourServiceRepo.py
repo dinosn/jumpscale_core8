@@ -180,6 +180,7 @@ class AtYourServiceRepo():
     async def stop(self):
         """
         stop run scheduler and wait for it to complete current runs and reties
+        also stops all recurring actions in the services in the repo.
         """
         if j.atyourservice.debug:
             await self.run_scheduler.stop(timeout=3)
@@ -187,12 +188,12 @@ class AtYourServiceRepo():
             await self.run_scheduler.stop(timeout=30)
             await self._run_scheduler_task
 
+        for service in self.services:
+            service.stop()
+
     async def delete(self):
 
-        # stop run scheduler, wait for 30 sec
-        await self.run_scheduler.stop(timeout=30)
-        if self._run_scheduler_task:
-            self._run_scheduler_task.cancel()
+        await self.stop()
 
         # removing related actors, services , runs, jobs and the model itslef.
         self.db.actors.destroy()

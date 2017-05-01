@@ -35,7 +35,7 @@ def _execute_cb(job, future):
         exception = future.exception()
     except asyncio.CancelledError as err:
         exception = err
-        job.logger.error("{} has been cancelled".format(job))
+        job.logger.info("{} has been cancelled".format(job))
 
     if exception is not None:
         job.state = 'error'
