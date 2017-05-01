@@ -84,7 +84,6 @@ class ContainerAYS(AYSable):
         """
         try:
             service = aysrepo.serviceGet(role=self.role, instance=self.name)
-            service.model.data.id = self._obj.id or 0
             return service
         except j.exceptions.NotFound:
             raise ValueError("Could not find {} with name {}".format(self.role, self.name))
@@ -100,10 +99,8 @@ class ContainerAYS(AYSable):
             # 'bridges': ,
             'hostNetworking': self._obj.host_network,
             'storage': self._obj.storage,
-            'id': self._obj.id,
         }
         service = actor.serviceCreate(instance=self._obj.name, args=clean_dict(args))
-        service.model.data.id = self._obj.id or 0
         return service
 
 
