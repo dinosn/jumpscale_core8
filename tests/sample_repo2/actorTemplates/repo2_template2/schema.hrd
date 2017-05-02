@@ -1,2 +1,0 @@
-repo2_template1 = type:str consume:repo2_template1:1
-description = type:str default:"description"

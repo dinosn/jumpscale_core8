@@ -1,8 +1,0 @@
-
-# 'QA SERVICE' (THE TEMPLATE SHOULD HAS THIS LINE)
-test_validate_bp_update_propagation__instance:
-
-actions:
-    - action: 'install'
-    - action: 'test'
-      actor: 'test_validate_bp_update_propagation'

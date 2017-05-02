@@ -1,2 +1,0 @@
-description = type:str default:"description"
-datacenter = type:str consume:datacenter:1

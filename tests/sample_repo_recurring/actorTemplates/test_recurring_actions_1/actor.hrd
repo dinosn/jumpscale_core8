@@ -1,3 +1,0 @@
-recurring.execution_gt_period =
-    period: 1m,
-    log: True,

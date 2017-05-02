@@ -26,7 +26,8 @@ def execution_gt_period(job):
 
 def execute_hanging_job(job):
     """
-    Tests managing of hanging jobs 
+    Tests managing of hanging jobs
     """
+    import time
     while True:
         time.sleep(5 * 60)
