@@ -13,7 +13,8 @@ def _prepare_device(node, devicename):
         raise ValueError("device {} not found".format(name))
 
     if disk.partition_table is None:
-        disk.mktable(table_type='gpt')
+        node.system('parted -s /dev/{} mklabel gpt mkpart primary 1m 100%'.format(name)).get()
+        return node.disks.get(name).partitions[0]
     if len(disk.partitions) <= 0:
         disk.mkpart('1m', '100%')
     return disk.partitions[0]
