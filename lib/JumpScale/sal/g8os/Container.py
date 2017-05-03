@@ -68,7 +68,7 @@ class Container:
     @property
     def info(self):
         for containerid, container in self.node.client.container.list().items():
-            if self.name in container['container']['arguments']['tags'] or []:
+            if self.name in (container['container']['arguments']['tags'] or []):
                 container['container']['id'] = int(containerid)
                 return container
         return
