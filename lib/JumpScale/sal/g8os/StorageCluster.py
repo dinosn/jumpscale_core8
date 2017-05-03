@@ -72,7 +72,7 @@ class StorageCluster:
         port = 2000
         for i in range(nr_server):
             fs = get_filesystem(i)
-            bind = "0.0.0.0:{}".format(port)
+            bind = "{}:{}".format(fs.pool.node.storageAddr, port)
             port = port + 1
             storage_server = StorageServer(cluster=self)
             storage_server.create(filesystem=fs, name="{}_data_{}".format(self.name, i), bind=bind)
@@ -82,7 +82,7 @@ class StorageCluster:
             for i in range(nr_server):
                 storage_server = self.storage_servers[i]
                 fs = get_filesystem(i, storage_server.node)
-                bind = "0.0.0.0:{}".format(port)
+                bind = "{}:{}".format(fs.pool.node.storageAddr, port)
                 port = port + 1
                 slave_server = StorageServer(cluster=self)
                 slave_server.create(filesystem=fs, name="{}_data_{}".format(self.name, (nr_server + i)), bind=bind, master=storage_server)
@@ -90,7 +90,7 @@ class StorageCluster:
 
         # deploy metadata storage server
         fs = get_filesystem(0)
-        bind = "0.0.0.0:{}".format(port)
+        bind = "{}:{}".format(fs.pool.node.storageAddr, port)
         port = port + 1
         metadata_storage_server = StorageServer(cluster=self)
         metadata_storage_server.create(filesystem=fs, name="{}_metadata_0".format(self.name), bind=bind)
@@ -98,7 +98,7 @@ class StorageCluster:
 
         if has_slave:
             fs = get_filesystem(i, metadata_storage_server.node)
-            bind = "0.0.0.0:{}".format(port)
+            bind = "{}:{}".format(fs.pool.node.storageAddr, port)
             port = port + 1
             slave_server = StorageServer(cluster=self)
             slave_server.create(filesystem=fs, name="{}_metadata_1".format(self.name), bind=bind, master=metadata_storage_server)
@@ -266,8 +266,8 @@ class StorageServer:
         if not self.container.is_running():
             self.container.start()
 
-        _, port = self.ardb.bind.split(":")
-        self.ardb.bind = '0.0.0.0:{}'.format(self._find_port(port))
+        ip, port = self.ardb.bind.split(":")
+        self.ardb.bind = '{}:{}'.format(ip, self._find_port(port))
         self.ardb.start(timeout=timeout)
 
     def stop(self, timeout=30):

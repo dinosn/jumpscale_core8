@@ -2,6 +2,7 @@ from JumpScale import j
 from JumpScale.sal.g8os.Disk import Disks, DiskType
 from JumpScale.sal.g8os.StoragePool import StoragePools
 from collections import namedtuple
+import netaddr
 
 
 Mount = namedtuple('Mount', ['device', 'mountpoint', 'fstype', 'options'])
@@ -13,6 +14,7 @@ class Node:
     def __init__(self, addr, port=6379, password=None):
         # g8os client to talk to the node
         self._client = j.clients.g8core.get(host=addr, port=port, password=password)
+        self._storageAddr = None
         self.addr = addr
         self.port = port
         self.disks = Disks(self)
@@ -23,7 +25,7 @@ class Node:
         return cls(
             addr=service.model.data.redisAddr,
             port=service.model.data.redisPort,
-            password=service.model.data.redisPassword
+            password=service.model.data.redisPassword or None
         )
 
     @property
@@ -44,6 +46,20 @@ class Node:
         if not macgwdev:
             raise AttributeError("name not find for node {}".format(self))
         return macgwdev.replace(":", '')
+
+    @property
+    def storageAddr(self):
+        if not self._storageAddr:
+            nic_data = self.client.info.nic()
+            for nic in nic_data:
+                if nic['name'] == 'backplane':
+                    for ip in nic['addrs']:
+                        network = netaddr.IPNetwork(ip['addr'])
+                        if network.version == 4:
+                            self._storageAddr = network.ip.format()
+                            return self._storageAddr
+            self._storageAddr = self.addr
+        return self._storageAddr
 
     def _eligible_fscache_disk(self, disks):
         """
