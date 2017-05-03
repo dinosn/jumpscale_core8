@@ -24,7 +24,7 @@ class StoragePoolAys(AYSable):
                     info = disk
                     break
                 for part in disk.get('children', []) or []:
-                    if device == "/dev/%s" % part['kname'] and part['mountpoint']:
+                    if device == "/dev/%s" % part['kname']:
                         info = part
                         break
                 if info:
