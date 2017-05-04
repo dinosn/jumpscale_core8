@@ -2,9 +2,6 @@ from JumpScale import j
 from JumpScale.sal.g8os.Disk import DiskType
 from JumpScale.sal.g8os.Container import Container
 from JumpScale.sal.g8os.ARDB import ARDB
-from JumpScale.sal.g8os.Node import Node
-import io
-import time
 
 
 class StorageCluster:
@@ -36,6 +33,34 @@ class StorageCluster:
                 cluster.nodes.append(storages_server.node)
 
         return cluster
+
+    def get_config(self):
+        data = {'dataStorage': [],
+                'metadataStorage': [],
+                'label': self.name,
+                'status': 'ready' if self.is_running() else 'error',
+                'nodes': [node.name for node in self.nodes]}
+        storageserversbyname = {}
+        for storageserver in self.storage_servers:
+            storageserversbyname.setdefault(storageserver.name, []).append(storageserver)
+        for name, storageservers in storageserversbyname.items():
+            server = {"master": None, "slave": None}
+            for storageserver in storageservers:
+                ip, port = storageserver.ardb.bind.split(':')
+                storagedata = {'container': storageserver.name,
+                               'ip': ip,
+                               'port': int(port),
+                               'status': 'ready' if storageserver.is_running() else 'error'}
+                if not storageserver.master:
+                    server['master'] = storagedata
+                else:
+                    server['slave'] = storagedata
+            if 'metadata' in name:
+                data['metadataStorage'].append(server)
+            else:
+                data['dataStorage'].append(server)
+
+        return data
 
     @property
     def nr_server(self):
@@ -75,26 +100,25 @@ class StorageCluster:
         port = 2000
         for i in range(nr_server):
             fs = get_filesystem(i)
-            bind = "0.0.0.0:{}".format(port)
+            bind = "{}:{}".format(fs.pool.node.storageAddr, port)
             port = port + 1
             storage_server = StorageServer(cluster=self)
             storage_server.create(filesystem=fs, name="{}_data_{}".format(self.name, i), bind=bind)
             self.storage_servers.append(storage_server)
 
         if has_slave:
-            for i  in range(nr_server):
+            for i in range(nr_server):
                 storage_server = self.storage_servers[i]
                 fs = get_filesystem(i, storage_server.node)
-                bind = "0.0.0.0:{}".format(port)
+                bind = "{}:{}".format(fs.pool.node.storageAddr, port)
                 port = port + 1
                 slave_server = StorageServer(cluster=self)
                 slave_server.create(filesystem=fs, name="{}_data_{}".format(self.name, (nr_server + i)), bind=bind, master=storage_server)
                 self.storage_servers.append(slave_server)
 
-
         # deploy metadata storage server
         fs = get_filesystem(0)
-        bind = "0.0.0.0:{}".format(port)
+        bind = "{}:{}".format(fs.pool.node.storageAddr, port)
         port = port + 1
         metadata_storage_server = StorageServer(cluster=self)
         metadata_storage_server.create(filesystem=fs, name="{}_metadata_0".format(self.name), bind=bind)
@@ -102,7 +126,7 @@ class StorageCluster:
 
         if has_slave:
             fs = get_filesystem(i, metadata_storage_server.node)
-            bind = "0.0.0.0:{}".format(port)
+            bind = "{}:{}".format(fs.pool.node.storageAddr, port)
             port = port + 1
             slave_server = StorageServer(cluster=self)
             slave_server.create(filesystem=fs, name="{}_metadata_1".format(self.name), bind=bind, master=metadata_storage_server)
@@ -113,28 +137,31 @@ class StorageCluster:
         return a list of disk that are not used by storage pool
         or has a different type as the one required for this cluster
         """
-        available_disks = []
-        for node in self.nodes:
-            available_disks.extend(node.disks.list())
-
         cluster_name = 'sp_cluster_{}'.format(self.label)
-        usedisks = []
+        available_disks = []
+
+        def check_partition(disk):
+            for partition in disk.partitions:
+                for filesystem in partition.filesystems:
+                    if filesystem['label'].startswith(cluster_name):
+                        return True
+
         for node in self.nodes:
             for disk in node.disks.list():
-                # skip devices which have filesystems with other labels
-                if len(disk.filesystems) > 0 and not disk.filesystems[0]['label'].startswith(cluster_name):
-                    usedisks.append(disk)
-                # skip devices which have partitions
-                if len(disk.partitions) > 0:
-                    usedisks.append(disk)
+                # skip disks of wrong type
+                if disk.type.name != self.disk_type:
+                    continue
+                # skip devices which have filesystems on the device
+                if len(disk.filesystems) > 0:
+                    continue
 
-        for disk in available_disks[:]:
-            if disk in usedisks:
-                available_disks.remove(disk)
-                continue
-            if disk.type.name != self.disk_type:
-                available_disks.remove(disk)
-                continue
+                # skip devices which have partitions
+                if len(disk.partitions) == 0:
+                    available_disks.append(disk)
+                else:
+                    if check_partition(disk):
+                        available_disks.append(disk)
+
         return available_disks
 
     def _prepare_disk(self, disk):
@@ -267,8 +294,8 @@ class StorageServer:
         if not self.container.is_running():
             self.container.start()
 
-        _, port = self.ardb.bind.split(":")
-        self.ardb.bind = '0.0.0.0:{}'.format(self._find_port(port))
+        ip, port = self.ardb.bind.split(":")
+        self.ardb.bind = '{}:{}'.format(ip, self._find_port(port))
         self.ardb.start(timeout=timeout)
 
     def stop(self, timeout=30):

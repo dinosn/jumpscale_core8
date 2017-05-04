@@ -30,10 +30,9 @@ class Partition(Mountable):
         return "/dev/{}".format(self.name)
 
     def _load(self, part_info):
-        detail = self._client.disk.getinfo(self.disk.name, part_info['name'])
         self.name = part_info['name']
         self.size = int(part_info['size'])
-        self.blocksize = detail['blocksize']
+        self.blocksize = self.disk.blocksize
         self.mountpoint = part_info['mountpoint']
         self.uuid = part_info['partuuid']
 

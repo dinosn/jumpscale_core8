@@ -42,7 +42,7 @@ class ActorServiceBaseModel(ModelBaseWithData):
         o = self.collection.capnp_schema.Timeout.new_message(actionName=actionname, timeout=timeout)
         self.addSubItem('timeouts', o)
 
-    def actionAdd(self, name, key="", period=0, log=True, isJob=True, timeout=3000):
+    def actionAdd(self, name, key="", period=0, log=True, isJob=True, timeout=0):
         """
         creates and add an action code model to the actor/service
         """

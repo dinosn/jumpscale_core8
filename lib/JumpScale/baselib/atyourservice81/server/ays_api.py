@@ -2,7 +2,6 @@ import json as JSON
 from sanic.response import json, text
 import jsonschema
 from jsonschema import Draft4Validator
-import asyncio
 import capnp
 
 from JumpScale.baselib.atyourservice81.server.views import service_view
@@ -11,8 +10,9 @@ from JumpScale.baselib.atyourservice81.server.views import actor_view
 from JumpScale.baselib.atyourservice81.server.views import blueprint_view
 from JumpScale.baselib.atyourservice81.server.views import template_view
 from JumpScale.baselib.atyourservice81.server.views import repository_view
-
 from JumpScale import j
+
+logger = j.logger.get('j.ays.sanic')
 
 Blueprint_schema = JSON.load(open(j.sal.fs.joinPaths(j.sal.fs.getParent(__file__),'schema/Blueprint_schema.json')))
 Repository_schema = JSON.load(open(j.sal.fs.joinPaths(j.sal.fs.getParent(__file__),'schema/Repository_schema.json')))
@@ -39,8 +39,8 @@ async def addTemplateRepo(request):
     except jsonschema.ValidationError as e:
         return text('Bad Request Body', 400)
 
-    # TODO
-    return json({})
+    j.do.pullGitRepo(url=inputs['url'], branch=inputs['branch'])
+    return json({'message': 'repo added'}, 201)
 
 async def listRepositories(request):
     '''
@@ -214,35 +214,23 @@ async def createRun(request, repository):
     using the 'GET /ays/repository/{repository}/aysrun/{aysrun_key}' endpoint
     It is handler for POST /ays/repository/<repository>/aysrun
     '''
-    def cb(future):
-        # TODO: request to callback_url
-        exception = future.exception()
-        if exception is not None:
-            print("error during execution of the run")
-            print(exception)
-
     try:
         repo = get_repo(repository)
     except j.exceptions.NotFound as e:
-        return json({'error':e.message}, 404)
+        return json({'error': e.message}, 404)
 
     simulate = j.data.types.bool.fromString(request.args.get('simulate', 'False'))
-    callback_url = request.args.get('callback_url', None)
 
     try:
-        run = repo.runCreate()
+        to_execute = repo.findScheduledActions()
+        run = repo.runCreate(to_execute)
         run.save()
         if not simulate:
-            future = asyncio.ensure_future(run.execute())
-            future.add_done_callback(cb)
-
+            await repo.run_scheduler.add(run)
         return json(run_view(run), 200)
 
     except j.exceptions.Input as e:
         return json({'error': e.msgpub}, 500)
-    except Exception as e:
-        raise e
-        # return json({'error':"Unexpected error: {}".format(str(e))}, 500)
 
 async def getRun(request, aysrun, repository):
     '''
@@ -393,8 +381,7 @@ async def executeBlueprint(request, blueprint, repository):
     except j.exceptions.NotFound as e:
         return json({'error':e.message}, 404)
 
-    bp = None
-    blueprints = repo.blueprints + repo.blueprintsDisabled
+    blueprints = repo.blueprints
     for item in blueprints:
         if item.name == blueprint:
             bp = item
@@ -428,20 +415,23 @@ async def updateBlueprint(request, blueprint, repository):
     except jsonschema.ValidationError as e:
         return text('Bad Request Body', 400)
 
-
-    name = inputs['name']
-
+    name = blueprint
+    new_name = inputs['name']
     names = [bp.name for bp in repo.blueprints]
     names.extend([bp.name for bp in repo.blueprintsDisabled])
     if name not in names:
         return json({'error':"blueprint with the name %s not found" % name}, 404)
-
+    # write content to the old file, then rename to the new name
     blueprint_path = j.sal.fs.joinPaths(repo.path, 'blueprints', name)
     blueprint = repo.blueprintGet(blueprint_path)
-    content = j.data.serializer.yaml.dumps(inputs['content'])
-    blueprint.content = content
+    content = inputs['content']
+    blueprint.content =  j.data.serializer.yaml.dumps(inputs['content'])
+    blueprint.name = new_name
     j.sal.fs.writeFile(blueprint_path, content)
-
+    # Rename the file
+    new_path = j.sal.fs.joinPaths(repo.path, 'blueprints', new_name)
+    j.sal.fs.renameFile(blueprint_path, new_path)
+    blueprint = repo.blueprintGet(new_path)
     return json(blueprint_view(blueprint), 200)
 
 async def deleteBlueprint(request, blueprint, repository):
@@ -630,7 +620,7 @@ async def getActorByName(request, name, repository):
     try:
         actor = repo.actorGet(name=name)
     except j.exceptions.NotFound as e:
-        json({'error':'actor {} not found'.format(name)}, 404)
+        json({'error': 'actor {} not found'.format(name)}, 404)
 
     return json(actor_view(actor), 200)
 
@@ -643,15 +633,15 @@ async def updateActor(request, name, repository):
     try:
         repo = get_repo(repository)
     except j.exceptions.NotFound as e:
-        return json({'error':e.message}, 404)
+        return json({'error': e.message}, 404)
 
-    template = repo.templateGet(name=name)
     try:
         actor = repo.actorGet(name=name)
-    except:
-        return json({'error':'actor {} not found'.format(name)}, 404)
+    except j.exceptions.NotFound:
+        return json({'error': 'actor {} not found'.format(name)}, 404)
 
-    actor._initFromTemplate(template)
+    reschedule = j.data.types.bool.fromString(request.args.get('reschedule', False))
+    actor.update(reschedule=reschedule)
 
     return json(actor_view(actor), 200)
 

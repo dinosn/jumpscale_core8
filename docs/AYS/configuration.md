@@ -1,34 +1,48 @@
 # AtYourService configuration
 
 Now that AYS use a database to store it's data, we need to be able to configure the connection to this database.  
-To do so we use a simple configuration file. It need to be located in `/optvar/cfg/ays/ays.conf`
+To do so we use a simple configuration file. It need to be located in `/optvar/cfg/jumpscale/ays.yaml`
 
-In this file you need to specify how AYS need to connect to redis and where the metadata exists.
+In this file you need to specify how AYS need to connect to redis, oauth (itsyouonline) information, and where the metadata exists.
 
-## For AYS metadata, you can add as many domains as you need
-```toml
+## Example
 
-[[metadata]]
-[metadata.jumpscale]
-url = "https://github.com/Jumpscale/ays_jumpscale8"
-branch = "master"
+```yaml
+oauth:
+  client_id: portalorg
+  client_secret: ghZYCsRCxEL0YpuBeC91RrFH1P8nW60bADfMHi04Pcj9O7MYkgvS
+  jwt_key: '-----BEGIN PUBLIC KEY-----
 
+    MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAES5X8XrfKdx9gYayFITc89wad4usrk0n2
+
+    7MjiGYvqalizeSWTHEpnd7oea9IQ8T5oJjMVH5cc0H5tFSKilFFeh//wngxIyny6
+
+    6+Vq5t5B0V0Ehy01+2ceEon2Y0XDkIKv
+
+    -----END PUBLIC KEY-----
+
+    '
+  organization: portalorg
+  redirect_uri: http://172.17.0.5:8200/api/oauth/callback
+production: false
+redis:
+  unixsocket: /tmp/redis.sock
 ```
 
 ## For redis config, it supports two mode, TCP or UNIX socket.
 
 Here are two example of configuration file.
 For TCP:
-```toml
-[redis]
-host = "localhost"
-port = 6379
+```yaml
+redis:
+  host: localhost
+  port: 6379
 ```
 
 For unix socket
-```toml
-[redis]
-unixsocket = '/var/run/redis.sock'
+```yaml
+redis:
+  unixsocket: /tmp/redis.sock
 ```
 
 If no configuration file exists, the default behavior is to try to connect to JS redis (over a unix socket located at `/tmp/redis.sock`)

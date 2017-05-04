@@ -1,8 +1,8 @@
 # How to debug an actor template ?
 
-During the developement of your actor template you will probably want to use tools like ipdb to jump into the execution of the code of the actions and inspect the state of the services. But since AYS use multiprocessing to improve the execution speed of the actions these tools don't work.
+During the developement of your actor template you will probably want to use tools like ipdb to jump into the execution of the code of the actions and inspect the state of the services.
 
-To force the execution of your action in process and thus allow utilisation of debugger you can use the `--debug` flag in your AYS command. E.g:
+To force the execution of your action in debug mode and thus allow utilisation of debugger you can use the `--debug` flag in your AYS command. E.g:
 
 ```python
 # start writing actions code

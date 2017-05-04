@@ -1,14 +1,5 @@
 from JumpScale import j
 from JumpScale.sal.g8os.abstracts import AYSable
-from JumpScale.sal.g8os.StorageCluster import StorageCluster
-
-
-def _node_name(node):
-    for nic in node.client.info.nic():
-        for addr in nic['addrs']:
-            if addr['addr'].split('/')[0] == node.addr:
-                return nic['hardwareaddr'].replace(':', '')
-    raise AttributeError("name not find for node {}".format(node))
 
 
 class StorageClusterAys(AYSable):
@@ -55,7 +46,7 @@ class StorageClusterAys(AYSable):
             'nrServer': self._obj.nr_server,
             'hasSlave': self._obj.has_slave,
             'diskType': str(self._obj.disk_type),
-            'nodes': [_node_name(node) for node in self._obj.nodes],
+            'nodes': [node.name for node in self._obj.nodes],
         }
         cluster_service = actor.serviceCreate(instance=self._obj.name, args=args)
 
@@ -93,7 +84,6 @@ class ContainerAYS(AYSable):
         """
         try:
             service = aysrepo.serviceGet(role=self.role, instance=self.name)
-            service.model.data.id = self._obj.id or 0
             return service
         except j.exceptions.NotFound:
             raise ValueError("Could not find {} with name {}".format(self.role, self.name))
@@ -101,7 +91,7 @@ class ContainerAYS(AYSable):
     def create(self, aysrepo):
         actor = aysrepo.actorGet(self.actor)
         args = {
-            'node': _node_name(self._obj.node),
+            'node': self._obj.node.name,
             'hostname': self._obj.hostname,
             'flist': self._obj.flist,
             # 'initProcesses': ,TODO
@@ -109,10 +99,8 @@ class ContainerAYS(AYSable):
             # 'bridges': ,
             'hostNetworking': self._obj.host_network,
             'storage': self._obj.storage,
-            'id': self._obj.id,
         }
         service = actor.serviceCreate(instance=self._obj.name, args=clean_dict(args))
-        service.model.data.id = self._obj.id or 0
         return service
 
 

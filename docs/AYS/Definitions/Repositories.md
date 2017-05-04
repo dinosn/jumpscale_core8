@@ -1,6 +1,6 @@
 # AYS Repositories
 
-AYS repositories (repos) are Git repositories containing services instances or services templates.
+AYS repositories (repos) are Git repositories containing services and actor templates.
 
 These are the two types of repositories used by AYS:
 

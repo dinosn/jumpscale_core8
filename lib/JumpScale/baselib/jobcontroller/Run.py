@@ -132,3 +132,12 @@ class Run:
         return out
 
     __str__ = __repr__
+
+    def __lt__(self, other):
+        return self.model.dbobj.lastModDate < other.model.dbobj.lastModDate
+
+    def __gt__(self, other):
+        return self.model.dbobj.lastModDate > other.model.dbobj.lastModDate
+
+    def __eq__(self, other):
+        return self.model.key == other.model.key

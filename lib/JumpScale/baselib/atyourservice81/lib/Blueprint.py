@@ -1,5 +1,6 @@
 from JumpScale import j
 import yaml
+import re
 
 class Blueprint:
     """
@@ -147,7 +148,6 @@ class Blueprint:
                         if not self.aysrepo.templateExists(actorname):
                             raise j.exceptions.Input(message="Cannot find actor:%s" %
                                                      actorname, level=1, source="", tags="", msgpub="")
-
                         actor = self.aysrepo.actorGet(actorname)
                         args = {} if item is None else item
                         await actor.asyncServiceCreate(instance=bpinstance, args=args)
@@ -239,10 +239,14 @@ class Blueprint:
                         self.logger.error(message)
                         return False, message
 
-                    aysname, _ = key.split("__", 1)
+                    aysname, instance = key.split("__", 1)
                     if aysname not in self.aysrepo.templates:
                         message = "Service template %s not found. Can't execute this blueprint" % aysname
                         self.logger.error(message)
+                        return False, message
+
+                    if not re.sub("[-_.]", "", instance).isalnum():
+                        message = "Service instance name should be digits or alphanumeric. you passed [%s]" % instance
                         return False, message
 
         return True, 'Blueprint format is valid'

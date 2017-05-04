@@ -8,10 +8,18 @@ Child services are created in a subdirectory of its parent.
 
 ## Example
 
-Example of `parent` in `schema.hrd`:
+Example of `parent` in `config.yaml`:
 
 ```yaml
-node = type:str parent:node auto
+doc:
+  property:
+  - node: ''
+links:
+  parent:
+    auto: true
+    optional: false
+    role: node
+    argname: 'node'
 ```
 
 - This means that the service has a parent of role `node` and that it should auto create its parent if it doesn't already exist.
@@ -55,31 +63,36 @@ rack__storage4:
 ```
 
 In this example the `rack` service use the datacenter service as parent.<br>
-After execution of the command `ays blueprint`, the service tree will look like that:
+After execution of the command `ays repo blueprint`, the service tree will look like that:
 
 ```shell
 $ tree services/
 services/
 ├── datacenter!eu
-│   ├── instance.hrd
+│   ├── data.json
+│   ├── schema.capnp
 │   ├── rack!storage1
-│   │   ├── instance.hrd
-│   │   └── state.yaml
+│   │   ├── data.json
+│   |   ├── schema.capnp
+│   │   └── service.json
 │   ├── rack!storage2
-│   │   ├── instance.hrd
-│   │   └── state.yaml
-│   └── state.yaml
+│   │   ├── data.json
+│   |   ├── schema.capnp
+│   │   └── service.json
+│   └── service.json
 └── datacenter!us
-    ├── instance.hrd
+    ├── data.json
+    ├── schema.capnp
     ├── rack!cpu1
-    │   ├── instance.hrd
-    │   └── state.yaml
+    │   ├── data.json
+    |   ├── schema.capnp
+    │   └── service.json
     ├── rack!storage4
-    │   ├── instance.hrd
-    │   └── state.yaml
-    └── state.yaml
+    │   ├── data.json
+    |   ├── schema.capnp
+    │   └── service.json
+    └── service.json
 
-6 directories, 12 files
 ```
 
 ```

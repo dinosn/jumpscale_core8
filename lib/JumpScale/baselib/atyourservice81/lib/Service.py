@@ -1,8 +1,5 @@
 from JumpScale import j
 from JumpScale.baselib.atyourservice81.lib.Recurring import RecurringTask
-
-import capnp
-import time
 import asyncio
 
 class Service:
@@ -84,15 +81,13 @@ class Service:
 
         # actions
         for action in actor.model.dbobj.actions:
-            actimeout = action.timeout
-
             self.model.actionAdd(
                 name=action.name,
                 key=action.actionKey,
                 period=action.period,
                 log=action.log,
                 isJob=action.isJob,
-                timeout=actimeout
+                timeout=action.timeout
             )
 
         # events
@@ -342,11 +337,7 @@ class Service:
             await service.delete()
 
         # cancel all recurring tasks
-        for k in list(self._recurring_tasks.keys()):
-            try:
-                await self._recurring_tasks[k].stop()
-            except asyncio.CancelledError:
-                del self._recurring_tasks[k]
+        self.stop()
 
         for producers in self.producers.values():
             for producer in producers:
@@ -445,7 +436,7 @@ class Service:
         for role, consumers_list in self.consumers.items():
             for consumer in consumers_list:
                 if action == "" or action in consumer.model.actionsState.keys():
-                    if consumerRole == "*" or consumer.model.role in consmersRole:
+                    if consumerRole == "*" or consumer.model.role in consumerRole:
                         consumers.add(consumer)
                 consumers = consumer.getConsumersRecursive(
                     consumers=consumers, callers=callers, action=action, consumerRole=consumerRole)
@@ -512,7 +503,7 @@ class Service:
                 return executor
         return j.tools.executor.getLocal()
 
-    def processChange(self, actor, changeCategory, args={}):
+    def processChange(self, actor, changeCategory, args={}, reschedule=False):
         """
         template action change
         categories :
@@ -561,7 +552,8 @@ class Service:
             action_name = changeCategory.split('action_mod_')[1]
             action_actor_pointer = actor.model.actions[action_name]
             service_action_pointer = self.model.actions[action_name]
-            service_action_pointer.state = 'changed'
+            if service_action_pointer.state == 'error' and not reschedule:
+                service_action_pointer.state = 'changed'
             service_action_pointer.actionKey = action_actor_pointer.actionKey
 
             # update the lastModDate of the action object
@@ -586,7 +578,6 @@ class Service:
     async def processEvent(self, channel=None, command=None, secret=None, tags={}, payload=None):
         coros = []
         for event_filter in self.model.dbobj.eventFilters:
-
             if channel is not None and channel != 'all' and channel != event_filter.channel:
                 continue
             if command is not None and command != event_filter.command:
@@ -774,6 +765,15 @@ class Service:
             task = self._recurring_tasks[name]
             task.stop()
             del self._recurring_tasks[name]
+
+    def stop(self):
+        """
+        stop all recurring action of the services
+        """
+        # cancel all recurring tasks
+        for k in list(self._recurring_tasks.keys()):
+            self._recurring_tasks[k].stop()
+            del self._recurring_tasks[k]
 
     def __eq__(self, service):
         if not service:

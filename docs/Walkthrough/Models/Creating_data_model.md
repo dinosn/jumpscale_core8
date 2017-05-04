@@ -1,15 +1,14 @@
-#Creating data models and connecting them to different databases:
+# Creating data models and connecting them to different databases:
 This walk-through explains how to create a model and how to traverse a collection.
 this process compromises of three steps:
 
- - **STEP1** : creating the capnp schema 
- - **STEP2** : creating the model file name_model.py
- - **STEP3** : creating the model collection file name_collection.py 
+ - **Step 1** : creating the capnp schema
+ - **Step 2** : creating the model file name_model.py
+ - **Step 3** : creating the model collection file name_collection.py
 
- 
- #STEP2:
- ###Create  the capnp file:
- To create the capnp schema: 
+
+ ## Step 1: Create  the capnp file
+ To create the capnp schema:
  A capnp file with the fields required in the model is set. This is done Along with setting the types and  in some cases length of each field an  example of this is :
 ```capnp
 @0xd80b12c2d2d132c34;
@@ -30,12 +29,12 @@ struct Issue {
     content @7 :Text;
     id @8 :UInt32;
     source @9 :Text;
-    #organization @10 :Text;  #key to organization , not sure?? 
+    #organization @10 :Text;  #key to organization , not sure??
     modTime @10 :UInt32;
     creationTime @11 :UInt32;
 }
 ```
- this is stored as `model.capnp` withing the same directory that will contain the models directory as demonstrated 
+ this is stored as `model.capnp` within the same directory that will contain the models directory as demonstrated
 ```
 ├── model.capnp
 ├── models
@@ -43,13 +42,12 @@ struct Issue {
 ├    ├── name_model.py
 ├    ├── name_collection.py
 ```
-  
 
 
- 
- #STEP2:
- ###Create  the model file:
- To create the model file , a python file and index has to be set to allow indexing , and 
+
+
+ ## Step 2: Create  the model file
+ To create the model file , a python file and index has to be set to allow indexing , and
  unique identification of each instance of the model, as set below:
 ```python
 from JumpScale import j
@@ -75,11 +73,10 @@ class OrgModel(base):
         self._index.index({ind: self.key})
         self._index.lookupSet("org_id", self.dbobj.id, self.key)
 ```
- 
- #STEP3:
- ###Create the collection file:
- To create the collection , a python file has to be set to allow searching , and listing of the models, as seen bellow:
- 
+
+ ## Step 3: Create the collection file
+ To create the collection , a python file has to be set to allow searching , and listing of the models, as seen below:
+
  ```python
  from JumpScale import j
 
@@ -135,8 +132,8 @@ class OrgModel(base):
      def getFromId(self, id):
          key = self._index.lookupGet("issue_id", id)
          return self.get(key)
- 
- ``` 
+
+ ```
 
 ```
 !!!

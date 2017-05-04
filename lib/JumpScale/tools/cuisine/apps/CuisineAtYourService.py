@@ -22,7 +22,7 @@ class CuisineAtYourService(base):
 
     def install(self):
         self.cuisine.development.pip.multiInstall([
-            'sanic==0.3.0',
+            'sanic>=0.5.2',
             'jsonschema'
         ])
 

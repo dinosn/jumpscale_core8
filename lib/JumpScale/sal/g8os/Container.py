@@ -1,10 +1,11 @@
 import json
 
+
 class Container:
     """G8SO Container"""
 
-
-    def __init__(self, name, node, flist, hostname=None, filesystems=None, nics=None, host_network=False, ports=None, storage=None, init_processes=None):
+    def __init__(self, name, node, flist, hostname=None, filesystems=None, nics=None,
+                 host_network=False, ports=None, storage=None, init_processes=None):
         """
         TODO: write doc string
         filesystems: dict {filesystemObj: target}
@@ -19,7 +20,6 @@ class Container:
         self.host_network = host_network
         self.storage = storage
         self.init_processes = init_processes or []
-        self.id = None
         self._client = None
 
         self._ays = None
@@ -56,10 +56,22 @@ class Container:
             storage=service.model.data.storage,
             init_processes=[p.to_dict() for p in service.model.data.initProcesses],
         )
-        if service.model.data.id != 0:
-            container.id = service.model.data.id
-
         return container
+
+    @property
+    def id(self):
+        info = self.info
+        if info:
+            return info['container']['id']
+        return
+
+    @property
+    def info(self):
+        for containerid, container in self.node.client.container.list().items():
+            if self.name in (container['container']['arguments']['tags'] or []):
+                container['container']['id'] = int(containerid)
+                return container
+        return
 
     @property
     def client(self):
@@ -78,6 +90,7 @@ class Container:
             host_network=self.host_network,
             nics=self.nics,
             port=self.ports,
+            tags=[self.name],
             hostname=self.hostname,
             storage=self.storage,
         )
@@ -85,8 +98,8 @@ class Container:
         result = job.get(timeout)
         if result.state != 'SUCCESS':
             raise RuntimeError('failed to create container %s' % result.data)
-        self.id = json.loads(result.data)
-        self._client = self.node.client.container.client(self.id)
+        containerid = json.loads(result.data)
+        self._client = self.node.client.container.client(containerid)
 
     def start(self):
         if not self.is_running():
@@ -108,12 +121,9 @@ class Container:
 
         self.node.client.container.terminate(self.id)
         self._client = None
-        self.id = None
 
     def is_running(self):
-        if self.id is None:
-            return False
-        return self.id in map(int, self.node.client.container.list().keys())
+        return self.id is not None
 
     @property
     def ays(self):

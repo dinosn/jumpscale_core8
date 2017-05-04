@@ -61,7 +61,7 @@ class NetTools:
         """
         return int(netaddr.IPAddress(ip))
 
-    def waitConnectionTest(self, ipaddr, port, timeout):
+    def waitConnectionTest(self, ipaddr, port, timeout, tryTimeout=5):
         """
         will return false if not successfull (timeout)
         """
@@ -69,16 +69,14 @@ class NetTools:
         if ipaddr.strip() == "localhost":
             ipaddr = "127.0.0.1"
         port = int(port)
-        start = j.data.time.getTimeEpoch()
-        now = start
-        remainingtime = (timeout - (now - start)) or 1
-        while remainingtime > 0:
-            if j.sal.nettools.tcpPortConnectionTest(ipaddr, port, remainingtime):
-                return True
-            time.sleep(0.1)
+        end = j.data.time.getTimeEpoch() + timeout
+        while True:
             now = j.data.time.getTimeEpoch()
-            remainingtime = (timeout - (now - start)) or 1
-        return False
+            timeout = tryTimeout if now + tryTimeout < end else end - now
+            if timeout <= 0:
+                return False
+            if j.sal.nettools.tcpPortConnectionTest(ipaddr, port, timeout):
+                return True
 
     def waitConnectionTestStopped(self, ipaddr, port, timeout):
         """

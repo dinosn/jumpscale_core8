@@ -135,6 +135,10 @@ struct Schema {
             args = dict(args)
             for k, v in args.items():
                 args[k] = self._ensure_dict(v)
+        if isinstance(args, list):
+            for i, v in enumerate(args):
+                args.insert(i, self._ensure_dict(v))
+                args.pop(i+1)
         return args
 
     def getObj(self, schemaInText, name="Schema", args={}, binaryData=None):

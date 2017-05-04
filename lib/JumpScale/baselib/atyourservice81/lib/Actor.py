@@ -104,6 +104,30 @@ class Actor():
         self.model.save()
         self.saveToFS()
 
+    def update(self, reschedule=False):
+        template = self.aysrepo.templateGet(self.model.dbobj.name)
+
+        self._initParent(template)
+        self._initProducers(template)
+        self._initFlists(template)
+
+        self._processActionsFile(j.sal.fs.joinPaths(template.path, "actions.py"), reschedule=reschedule)
+        self._initRecurringActions(template)
+        self._initTimeouts(template)
+        self._initEvents(template)
+
+        # hrd schema to capnp
+        if self.model.dbobj.serviceDataSchema != template.schemaCapnpText:
+            self.model.dbobj.serviceDataSchema = template.schemaCapnpText
+            self.processChange("dataschema")
+
+        if self.model.dbobj.dataUI != template.dataUI:
+            self.model.dbobj.dataUI = template.dataUI
+            self.processChange("ui")
+
+        self.saveToFS()
+        self.model.save()
+
     def _initFromTemplate(self, template):
         if self.model is None:
             self.model = self.aysrepo.db.actors.new()
@@ -129,18 +153,8 @@ class Actor():
         self._initTimeouts(template)
         self._initEvents(template)
 
-        # hrd schema to capnp
-        if self.model.dbobj.serviceDataSchema != template.schemaCapnpText:
-            self.model.dbobj.serviceDataSchema = template.schemaCapnpText
-            self.processChange("dataschema")
-
-        if self.model.dbobj.dataUI != template.dataUI:
-            self.model.dbobj.dataUI = template.dataUI
-            self.processChange("ui")
-
-        # if self.model.dataJSON != template.configJSON:
-        #     self.model.dbobj.data = msgpack.dumps(template.configDict)
-        #     self.processChange("config")
+        self.model.dbobj.serviceDataSchema = template.schemaCapnpText
+        self.model.dbobj.dataUI = template.dataUI
 
         self.saveToFS()
         self.model.save()
@@ -176,7 +190,6 @@ class Actor():
 
     def _initRecurringActions(self, template):
         for reccuring_info in template.recurringConfig:
-            print("############ recurring ############")
             action_model = self.model.actions[reccuring_info['action']]
             action_model.period = j.data.types.duration.convertToSeconds(reccuring_info['period'])
             action_model.log = j.data.types.bool.fromString(reccuring_info['log'])
@@ -194,7 +207,6 @@ class Actor():
 
         events.finish()
 
-
     def _initFlists(self, template):
         flists = self.model.dbobj.init_resizable_list('flists')
         for path in template.flists.values():
@@ -208,7 +220,7 @@ class Actor():
             flist.path = dest
         flists.finish()
 
-    def _processActionsFile(self, path):
+    def _processActionsFile(self, path, reschedule=False):
         def string_has_triple_quotes(s):
             return "'''" in s or '"""' in s
 
@@ -347,7 +359,7 @@ class Actor():
 
         # change if  we need to fire processChange jobs
         for action in self.model.dbobj.actions:
-            self._check_change(action)
+            self._check_change(action, reschedule=reschedule)
 
     def _checkRemovedActions(self, parsedMethods):
         for action in self.model.actionsSortedList:
@@ -380,17 +392,17 @@ class Actor():
 
         self.model.actionAdd(name=actionName, key=ac.key, isJob=('job' in amMethodArgs))
 
-    def _check_change(self, actionObj):
+    def _check_change(self, actionObj, reschedule=False):
         """
         @param actionName = actionName
         @param action is the action object
         """
         if actionObj.state == "new":
-            self.processChange("action_new_%s" % actionObj.name)
+            self.processChange("action_new_%s" % actionObj.name, reschedule=reschedule)
         else:
-            self.processChange("action_mod_%s" % actionObj.name)
+            self.processChange("action_mod_%s" % actionObj.name, reschedule=reschedule)
 
-    def processChange(self, changeCategory):
+    def processChange(self, changeCategory, reschedule=False):
         """
         template action change
         categories :
@@ -427,7 +439,7 @@ class Actor():
         self.saveAll()
 
         for service in self.aysrepo.servicesFind(actor=self.model.name):
-            service.processChange(actor=self, changeCategory=changeCategory)
+            service.processChange(actor=self, changeCategory=changeCategory, reschedule=reschedule)
 
 # SERVICE
 
