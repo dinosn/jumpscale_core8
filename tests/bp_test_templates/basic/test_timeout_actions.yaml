@@ -1,6 +1,4 @@
-simpleactor__tservice:
+test_timeout_actions__tservice:
 
 actions:
-   - action: 'install'
-   - action: 'firstac'
-   - action: 'secondact'
+   - action: 'test'
