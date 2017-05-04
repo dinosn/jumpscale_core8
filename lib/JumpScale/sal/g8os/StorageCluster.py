@@ -34,6 +34,34 @@ class StorageCluster:
 
         return cluster
 
+    def get_config(self):
+        data = {'dataStorage': [],
+                'metadataStorage': [],
+                'label': self.name,
+                'status': 'ready' if self.is_running() else 'error',
+                'nodes': [node.name for node in self.nodes]}
+        storageserversbyname = {}
+        for storageserver in self.storage_servers:
+            storageserversbyname.setdefault(storageserver.name, []).append(storageserver)
+        for name, storageservers in storageserversbyname.items():
+            server = {"master": None, "slave": None}
+            for storageserver in storageservers:
+                ip, port = storageserver.ardb.bind.split(':')
+                storagedata = {'container': storageserver.name,
+                               'ip': ip,
+                               'port': int(port),
+                               'status': 'ready' if storageserver.is_running() else 'error'}
+                if not storageserver.master:
+                    server['master'] = storagedata
+                else:
+                    server['slave'] = storagedata
+            if 'metadata' in name:
+                data['metadataStorage'].append(server)
+            else:
+                data['dataStorage'].append(server)
+
+        return data
+
     @property
     def nr_server(self):
         """
