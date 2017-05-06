@@ -14,6 +14,7 @@ class Node:
     def __init__(self, addr, port=6379, password=None):
         # g8os client to talk to the node
         self._client = j.clients.g8core.get(host=addr, port=port, password=password)
+        self._client.timeout = 120
         self._storageAddr = None
         self.addr = addr
         self.port = port
