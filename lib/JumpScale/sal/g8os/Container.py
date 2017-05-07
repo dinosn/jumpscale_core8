@@ -1,10 +1,40 @@
 import json
 
 
+class Containers:
+    def __init__(self, node):
+        self.node = node
+
+    def list(self):
+        containers = []
+        for container in self.node.client.container.list().values():
+            try:
+                containers.append(Container.from_containerinfo(container, self.node))
+            except ValueError:
+                # skip containers withouth tags
+                pass
+        return containers
+
+    def get(self, name):
+        containers = list(self.node.client.container.find(name).values())
+        if not containers:
+            raise LookupError("Could not find container with name {}".format(name))
+        if len(containers) > 1:
+            raise LookupError("Found more than one containter with name {}".format(name))
+        return Container.from_containerinfo(containers[0], self.node)
+
+    def create(self, name, flist, hostname=None, mounts=None, nics=None,
+               host_network=False, ports=None, storage=None, init_processes=None):
+        container = Container(name, self.node, flist, hostname, mounts, nics,
+                              host_network, ports, storage, init_processes)
+        container.start()
+        return container
+
+
 class Container:
     """G8SO Container"""
 
-    def __init__(self, name, node, flist, hostname=None, filesystems=None, nics=None,
+    def __init__(self, name, node, flist, hostname=None, mounts=None, nics=None,
                  host_network=False, ports=None, storage=None, init_processes=None):
         """
         TODO: write doc string
@@ -12,7 +42,7 @@ class Container:
         """
         self.name = name
         self.node = node
-        self.filesystems = filesystems or {}
+        self.mounts = mounts or {}
         self.hostname = hostname
         self.flist = flist
         self.ports = ports or {}
@@ -25,6 +55,22 @@ class Container:
         self._ays = None
 
     @classmethod
+    def from_containerinfo(cls, containerinfo, node):
+        arguments = containerinfo['container']['arguments']
+        if not arguments['tags']:
+            # we don't deal with tagless containers
+            raise ValueError("Could not load containerinfo withouth tags")
+        return cls(arguments['tags'][0],
+                   node,
+                   arguments['root'],
+                   arguments['hostname'],
+                   arguments['mount'],
+                   arguments['nics'],
+                   arguments['host_network'],
+                   arguments['port'],
+                   arguments['storage'])
+
+    @classmethod
     def from_ays(cls, service):
         from JumpScale.sal.g8os.Node import Node
         node = Node.from_ays(service.parent)
@@ -33,8 +79,7 @@ class Container:
             source, dest = portmap.split(':')
             ports[int(source)] = int(dest)
         nics = [nic.to_dict() for nic in service.model.data.nics]
-
-        filesystems = {}
+        mounts = {}
         for mount in service.model.data.mounts:
             fs_service = service.aysrepo.serviceGet('filesystem', mount.filesystem)
             try:
@@ -42,12 +87,12 @@ class Container:
                 fs = sp.get(fs_service.name)
             except KeyError:
                 continue
-            filesystems[fs] = mount.target
+            mounts[fs.path] = mount.target
 
         container = cls(
             name=service.name,
             node=node,
-            filesystems=filesystems,
+            mounts=mounts,
             nics=nics,
             hostname=service.model.data.hostname,
             flist=service.model.data.flist,
@@ -68,7 +113,7 @@ class Container:
     @property
     def info(self):
         for containerid, container in self.node.client.container.list().items():
-            if self.name in container['container']['arguments']['tags'] or []:
+            if self.name in (container['container']['arguments']['tags'] or []):
                 container['container']['id'] = int(containerid)
                 return container
         return
@@ -80,13 +125,9 @@ class Container:
         return self._client
 
     def _create_container(self, timeout=60):
-        mounts = {}
-        for fs, target in self.filesystems.items():
-            mounts[fs.path] = target
-
         job = self.node.client.container.create(
             root_url=self.flist,
-            mount=mounts,
+            mount=self.mounts,
             host_network=self.host_network,
             nics=self.nics,
             port=self.ports,
@@ -104,7 +145,6 @@ class Container:
     def start(self):
         if not self.is_running():
             self._create_container()
-
             for process in self.init_processes:
                 cmd = "{} {}".format(process['name'], ' '.join(process.get('args', [])))
                 pwd = process.get('pwd', '')
@@ -131,3 +171,9 @@ class Container:
             from JumpScale.sal.g8os.atyourservice.StorageCluster import ContainerAYS
             self._ays = ContainerAYS(self)
         return self._ays
+
+    def __str__(self):
+        return "Container <{}>".format(self.name)
+
+    def __repr__(self):
+        return str(self)
