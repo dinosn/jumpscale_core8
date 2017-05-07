@@ -606,7 +606,7 @@ def blueprint(name):
             return
 
         blueprints = resp.json()
-        names = [bp['name'] for bp in blueprints]
+        names = [bp['name'] for bp in blueprints if not bp['archived']]
     else:
         names = [name]
 
