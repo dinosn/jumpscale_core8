@@ -34,7 +34,7 @@ class CuisineMongodb(app):
 
         if url:
             self.logger.info('Downloading mongodb.')
-            self.cuisine.core.file_download(url, to="$TMPDIR", overwrite=False, expand=True, processtimeout=700)
+            self.cuisine.core.file_download(url, to="$TMPDIR", overwrite=False, expand=True, timeout=0)
             tarpaths = self.cuisine.core.find("$TMPDIR", recursive=False, pattern="*mongodb*.tgz", type='f')
             if len(tarpaths) == 0:
                 raise j.exceptions.Input(message="could not download:%s, did not find in %s" % (

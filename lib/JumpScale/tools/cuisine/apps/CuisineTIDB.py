@@ -37,7 +37,7 @@ class CuisineTIDB(app):
         #
         # self.cuisine.core.run('cd {builddir}; bash {build}'.format(builddir=self.BUILDDIR, build=build_script), profile=True, timeout=1000)
         if not self.cuisine.core.file_exists(dest):
-            self.cuisine.core.file_download(tidb_url, dest, processtimeout=900)
+            self.cuisine.core.file_download(tidb_url, dest, timeout=900)
         self.cuisine.core.run(
             'cd $BUILDDIR && tar xvf tidb-latest-linux-amd64.tar.gz && cp -r $BUILDDIR/tidb-latest-linux-amd64/* {builddir}'.format(builddir=self.BUILDDIR))
         self.doneSet('build')
