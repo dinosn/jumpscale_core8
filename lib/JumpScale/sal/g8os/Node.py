@@ -1,9 +1,9 @@
 from JumpScale import j
 from JumpScale.sal.g8os.Disk import Disks, DiskType
+from JumpScale.sal.g8os.Container import Containers
 from JumpScale.sal.g8os.StoragePool import StoragePools
 from collections import namedtuple
 import netaddr
-
 
 Mount = namedtuple('Mount', ['device', 'mountpoint', 'fstype', 'options'])
 
@@ -20,6 +20,7 @@ class Node:
         self.port = port
         self.disks = Disks(self)
         self.storagepools = StoragePools(self)
+        self.containers = Containers(self)
 
     @classmethod
     def from_ays(cls, service):

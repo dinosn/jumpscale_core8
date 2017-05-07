@@ -244,7 +244,7 @@ class StorageServer:
             name=name,
             node=filesystem.pool.node,
             flist="https://hub.gig.tech/gig-official-apps/ardb-rocksdb.flist",
-            filesystems={filesystem: '/mnt/data'},
+            mounts={filesystem.path: '/mnt/data'},
             host_network=True,
         )
         self.ardb = ARDB(
