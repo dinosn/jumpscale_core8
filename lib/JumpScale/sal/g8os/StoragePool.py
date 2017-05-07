@@ -5,7 +5,7 @@ import os
 def _prepare_device(node, devicename):
     ss = devicename.split('/')
     if len(ss) < 3:
-        return RuntimeError("bad device name: {}".format(devicename))
+        raise RuntimeError("bad device name: {}".format(devicename))
     name = ss[2]
 
     disk = node.disks.get(name)
