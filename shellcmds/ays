@@ -600,7 +600,7 @@ def blueprint(name):
     """
     if name == '':
         try:
-            resp = ayscl.api.ays.listBlueprints(_current_repo_name())
+            resp = ayscl.api.ays.listBlueprints(_current_repo_name(), query_params={'archived': False})
         except Exception as e:
             print("error during listing of blueprints: {}".format(_extract_error(e)))
             return
