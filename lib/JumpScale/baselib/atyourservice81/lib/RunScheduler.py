@@ -47,8 +47,11 @@ class RunScheduler:
         returns the run that is currently beeing executed.
         """
         if self._current is not None:
-            run_model = j.core.jobcontroller.db.runs.get(self._current)
-            return run_model.objectGet()
+            try:
+                run_model = j.core.jobcontroller.db.runs.get(self._current)
+                return run_model.objectGet()
+            except j.exceptions.Input:
+                return None
         return None
 
 
