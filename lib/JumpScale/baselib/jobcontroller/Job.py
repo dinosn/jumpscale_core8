@@ -61,8 +61,10 @@ def _execute_cb(job, future):
             job.service.model.dbobj.state = 'ok'
 
         job.logger.info("job {} done sucessfuly".format(str(job)))
-
-    job.save()
+    if service_action_obj.period > 0:  # recurring action.
+        job.model.delete()
+    else:
+        job.save()
 
 @contextmanager
 def generate_profile(job):
