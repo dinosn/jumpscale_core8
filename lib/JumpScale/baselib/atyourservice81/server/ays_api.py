@@ -127,6 +127,38 @@ async def destroyRepository(request, repository):
     return json({}, 204)
 
 
+async def getSchedulerStatus(request, repository):
+    '''
+    Return status of the scheduler
+    It is handler for GET /ays/repository/<repository>/scheduler
+    '''
+    try:
+        repo = get_repo(repository)
+    except j.exceptions.NotFound as e:
+        return json({'error': e.message}, 404)
+
+    return json({
+        "status": repo.run_scheduler.status,
+        "queueSize": repo.run_scheduler.queue.qsize()
+    }, 200)
+
+
+async def getCurrentRun(request, repository):
+    '''
+    Inspect if a run is currently beeing executed
+    It is handler for GET /ays/repository/<repository>/scheduler/runs/running
+    '''
+    try:
+        repo = get_repo(repository)
+    except j.exceptions.NotFound as e:
+        return json({'error': e.message}, 404)
+
+    if repo.run_scheduler.current_run:
+        return json(run_view(repo.run_scheduler.current_run), 200)
+
+    return json({}, 204)
+
+
 async def listTemplates(request, repository):
     '''
     list all templates

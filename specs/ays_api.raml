@@ -40,6 +40,8 @@ securitySchemes:
         - "company:contracts:read"
         - "contract:read"
         - "contract:participant"
+        - "contract:participant"
+        - "user:memberof:organization"
 
 types:
   Repository:
@@ -258,6 +260,14 @@ types:
     example:
       code: 404
       error: "repository not found"
+
+  Scheduler:
+    properties:
+      status:
+        enum: ['halted', 'running', 'stopping']
+      queueSize:
+        type: integer
+        description: Number of run present in the queue.
 
 
 /ays:
@@ -725,8 +735,28 @@ types:
                     body:
                       application/json:
                         type: Error
-
-
+      /scheduler:
+        description: Get information about run scheduler of this repository
+        get:
+          displayName: getSchedulerStatus
+          description: Return status of the scheduler
+          responses:
+            200:
+              body:
+                application/json:
+                  type: Scheduler
+        /running:
+          get:
+            description: Inspect if a run is currently beeing executed
+            displayName: getCurrentRun
+            responses:
+              200:
+                description: Return the aysrun that is currently beeing executed
+                body:
+                  application/json:
+                    type: AYSRun
+              204:
+                description: not run currently beeing executed
 
 /webhooks:
   /github:

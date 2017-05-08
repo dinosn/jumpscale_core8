@@ -30,19 +30,39 @@ class RunScheduler:
         self._retries = []
         self._retries_lock = asyncio.Lock()
         self._accept = False
-        self.is_running = False
+        self._is_running = False
+        self._current = None
+
+    @property
+    def status(self):
+        if self._accept and self._is_running:
+            return "running"
+        if not self._accept and self._is_running:
+            return "stopping"
+        return "halted"
+
+    @property
+    def current_run(self):
+        """
+        returns the run that is currently beeing executed.
+        """
+        if self._current is not None:
+            run_model = j.core.jobcontroller.db.runs.get(self._current)
+            return run_model.objectGet()
+        return None
+
 
     async def start(self):
         """
         starts the run scheduler and begin whating the run queue.
         """
         self.logger.info("{} started".format(self))
-        if self.is_running:
+        if self._is_running:
             return
 
-        self.is_running = True
+        self._is_running = True
         self._accept = True
-        while self.is_running:
+        while self._is_running:
 
             try:
                 _, run = await asyncio.wait_for(self.queue.get(), timeout=10)
@@ -54,15 +74,17 @@ class RunScheduler:
                 continue
 
             try:
+                self._current = run.model.key
                 await run.execute()
             except:
                 # exception is handle in the job directly,
                 # catch here to not interrupt the loop
                 pass
             finally:
+                self._current = None
                 self.queue.task_done()
 
-        self.is_running = False
+        self._is_running = False
         self.logger.info("{} stopped".format(self))
 
     async def stop(self, timeout=30):
