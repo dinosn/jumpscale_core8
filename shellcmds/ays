@@ -618,6 +618,43 @@ def blueprint(name):
             print('error during execution of the blueprint {}: {}'.format(name, _extract_error(e)))
             return
 
+
+@cli.group()
+def scheduler():
+    """
+    Group of commands about run scheduler
+    """
+
+@scheduler.command()
+def status():
+    """
+    Display the status of the run scheduler and the number of run in the queue for the current repository
+    """
+    repo_name = _current_repo_name()
+    status_resp = ayscl.api.ays.getSchedulerStatus(repo_name)
+    current_resp = ayscl.api.ays.getCurrentRun(repo_name)
+
+    if current_resp.status_code == 204:
+        run = None
+    else:
+        run = current_resp.json()
+    info = status_resp.json()
+    msg = """
+Status: {status}
+Number of run waiting in the queue: {qsize}
+    """.format(repo=repo_name, status=info['status'], qsize=info['queueSize'])
+    if run:
+        msg += """
+Run currently executing:
+key: {key}
+status: {state}
+        """.format(**run)
+    else:
+        msg += "\nNo run currently executing"
+
+    print(msg)
+
+
 # AYS repository related group of commands
 @cli.command()
 @click.argument('action')

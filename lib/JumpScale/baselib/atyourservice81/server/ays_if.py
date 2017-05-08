@@ -209,4 +209,4 @@ class ays_repository_byrepository_scheduler_runs_runningView(HTTPMethodView):
 
         return await ays_api.getCurrentRun(request, repository)
 
-ays_if.add_route(ays_repository_byrepository_scheduler_runs_runningView.as_view(), '/ays/repository/<repository>/scheduler/runs/running')
+ays_if.add_route(ays_repository_byrepository_scheduler_runs_runningView.as_view(), '/ays/repository/<repository>/scheduler/running')
