@@ -449,7 +449,7 @@ def _print_run(run, logs=False):
         return " {datetime} {category}: {log}\n".format(**log, datetime=print_date(log['epoch']))
 
     out = io.StringIO()
-    out.write(click.style("RUN:{}\n".format(run['key']), fg='green', underline=True))
+    out.write(click.style("RUN:{} ({})\n".format(run['key'], run['state']), fg='green', underline=True))
     # out.write(click.style("-------\n", fg='green'))
     for step in run['steps']:
         # out.write(click.style("## step:{}\n\n".format(step['number']), fg='green'))
@@ -522,11 +522,9 @@ def create(assume_yes, force, debug, profile, follow):
             j.tools.console.cls()
             print("Current state of the run:\n")
             _print_run(run)
-            running = False
-            for step in resp.json()['steps']:
-                for job in step['jobs']:
-                    if job['state'] == 'running':
-                        running = True
+
+            running = resp.json()['state'] not in ['ok', 'error']
+
             if running:
                 time.sleep(2)
 
