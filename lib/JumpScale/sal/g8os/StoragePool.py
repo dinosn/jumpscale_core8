@@ -1,3 +1,4 @@
+from JumpScale import j
 from JumpScale.sal.g8os.abstracts import Mountable
 import os
 

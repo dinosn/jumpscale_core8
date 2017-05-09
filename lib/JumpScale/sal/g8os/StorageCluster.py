@@ -219,8 +219,11 @@ class StorageCluster:
             self._ays = StorageClusterAys(self)
         return self._ays
 
-    def __repr__(self):
+    def __str__(self):
         return "StorageCluster <{}>".format(self.label)
+
+    def __repr__(self):
+        return str(self)
 
 
 class StorageServer:
@@ -303,3 +306,9 @@ class StorageServer:
         container = self.container.is_running()
         ardb, _ = self.ardb.is_running()
         return (container and ardb)
+
+    def __str__(self):
+        return "StorageServer <{}>".format(self.container.name)
+
+    def __repr__(self):
+        return str(self)
