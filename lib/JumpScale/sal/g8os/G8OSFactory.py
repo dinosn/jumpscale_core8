@@ -1,6 +1,8 @@
 from JumpScale.sal.g8os.Node import Node
 from JumpScale.sal.g8os.StorageCluster import StorageCluster
+from JumpScale import j
 
+logger = j.sal.logger.get('j.sal.g8os')
 
 class G8OSFactory(object):
     """Factory for G8OS SAL"""
