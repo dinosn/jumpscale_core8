@@ -294,6 +294,7 @@ async def deleteRun(request, aysrun, repository):
 
     try:
         repo.runDelete(aysrun)
+        return json('run deleted succesfully', 200)
     except j.exceptions.NotFound as e:
         return json({'error': e.message}, 404)
 
