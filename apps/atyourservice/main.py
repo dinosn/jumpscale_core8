@@ -16,11 +16,12 @@ def configure_logger(level):
     # configure jumpscale loggers
     j.logger.set_level(level)
     # configure asyncio logger
-    asyncio_logger = logging.getLogger('asyncio')
-    asyncio_logger.handlers = []
-    asyncio_logger.addHandler(j.logger.handlers.consoleHandler)
-    asyncio_logger.addHandler(j.logger.handlers.fileRotateHandler)
-    asyncio_logger.setLevel(level)
+    for l in ('asyncio', 'g8core'):
+        logger = logging.getLogger(l)
+        logger.handlers = []
+        logger.addHandler(j.logger.handlers.consoleHandler)
+        logger.addHandler(j.logger.handlers.fileRotateHandler)
+        logger.setLevel(level)
 
 
 @click.command()
