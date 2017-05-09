@@ -2,7 +2,7 @@ from JumpScale import j
 from JumpScale.sal.g8os.Disk import DiskType
 from JumpScale.sal.g8os.Container import Container
 from JumpScale.sal.g8os.ARDB import ARDB
-
+from .G8OSFactory import logger
 
 class StorageCluster:
     """StorageCluster is a cluster of ardb servers"""
@@ -22,6 +22,7 @@ class StorageCluster:
 
     @classmethod
     def from_ays(cls, service):
+        logger.debug("load cluster storage cluster from service (%s)", service)
         cluster = cls(label=service.name)
         cluster.disk_type = str(service.model.data.diskType)
         cluster.has_slave = service.model.data.hasSlave
@@ -64,6 +65,7 @@ class StorageCluster:
         @param nr_server: number of storage server to deploy
         @param has_slave: boolean specifying of we need to deploy slave storage server
         """
+        logger.debug("start creation of cluster %s", self.label)
         self.nodes = nodes
         if disk_type not in DiskType.__members__.keys():
             raise TypeError("disk_type should be on of {}".format(', '.join(DiskType.__members__.keys())))
@@ -71,6 +73,7 @@ class StorageCluster:
         self.has_slave = has_slave
         if len(nodes) < 2 and has_slave:
             raise RuntimeError("can't deploy storage cluster with slaves if deployed on less then two nodes")
+
 
         for disk in self._find_available_disks():
             self.filesystems.append(self._prepare_disk(disk))
@@ -125,6 +128,7 @@ class StorageCluster:
         return a list of disk that are not used by storage pool
         or has a different type as the one required for this cluster
         """
+        logger.debug("find available_disks")
         cluster_name = 'sp_cluster_{}'.format(self.label)
         available_disks = []
 
@@ -158,7 +162,7 @@ class StorageCluster:
         returns the filesytem created
         """
         name = "cluster_{}_{}".format(self.label, disk.name)
-
+        logger.debug("prepare disk %s", disk.devicename)
         try:
             pool = disk.node.storagepools.get(name)
         except ValueError:
@@ -173,10 +177,12 @@ class StorageCluster:
         return fs
 
     def start(self):
+        logger.debug("start %s", self)
         for server in self.storage_servers:
             server.start()
 
     def stop(self):
+        logger.debug("stop %s", self)
         for server in self.storage_servers:
             server.stop()
 
@@ -227,6 +233,7 @@ class StorageServer:
         self.master = None
 
     def create(self, filesystem, name, bind='0.0.0.0:16739', master=None):
+        logger.debug("create storage server %s in cluster %s", name, self.cluster.label)
         self.master = master
         self.container = Container(
             name=name,
@@ -276,6 +283,7 @@ class StorageServer:
             return start_port
 
     def start(self, timeout=30):
+        logger.debug("start %s", self)
         if self.master:
             self.master.start()
 
@@ -287,6 +295,7 @@ class StorageServer:
         self.ardb.start(timeout=timeout)
 
     def stop(self, timeout=30):
+        logger.debug("stop %s", self)
         self.ardb.stop(timeout=timeout)
         self.container.stop()
 
