@@ -2,13 +2,12 @@ from JumpScale.sal.g8os.Node import Node
 from JumpScale.sal.g8os.StorageCluster import StorageCluster
 from JumpScale import j
 
-logger = j.sal.logger.get('j.sal.g8os')
-
 class G8OSFactory(object):
     """Factory for G8OS SAL"""
 
     def __init__(self):
         self.__jslocation__ = "j.sal.g8os"
+        self.logger = j.logger.get('j.sal.g8os')
 
     def get_node(self, addr, port=6379, password=None):
         """

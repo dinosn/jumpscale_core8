@@ -1,5 +1,4 @@
 import json
-from .G8OSFactory import logger
 
 
 class Containers:
@@ -26,7 +25,7 @@ class Containers:
 
     def create(self, name, flist, hostname=None, mounts=None, nics=None,
                host_network=False, ports=None, storage=None, init_processes=None):
-        logger.debug("create container %s", name)
+        j.sal.g8os.logger.debug("create container %s", name)
         container = Container(name, self.node, flist, hostname, mounts, nics,
                               host_network, ports, storage, init_processes)
         container.start()
@@ -58,7 +57,7 @@ class Container:
 
     @classmethod
     def from_containerinfo(cls, containerinfo, node):
-        logger.debug("create container from info")
+        j.sal.g8os.logger.debug("create container from info")
         arguments = containerinfo['container']['arguments']
         if not arguments['tags']:
             # we don't deal with tagless containers
@@ -75,7 +74,7 @@ class Container:
 
     @classmethod
     def from_ays(cls, service):
-        logger.debug("create container from service (%s)", service)
+        j.sal.g8os.logger.debug("create container from service (%s)", service)
         from JumpScale.sal.g8os.Node import Node
         node = Node.from_ays(service.parent)
         ports = {}
@@ -109,7 +108,7 @@ class Container:
 
     @property
     def id(self):
-        logger.debug("get container id")
+        j.sal.g8os.logger.debug("get container id")
         info = self.info
         if info:
             return info['container']['id']
@@ -117,7 +116,7 @@ class Container:
 
     @property
     def info(self):
-        logger.debug("get container info")
+        j.sal.g8os.logger.debug("get container info")
         for containerid, container in self.node.client.container.list().items():
             if self.name in (container['container']['arguments']['tags'] or []):
                 container['container']['id'] = int(containerid)
@@ -131,7 +130,7 @@ class Container:
         return self._client
 
     def _create_container(self, timeout=60):
-        logger.debug("send create container command to g8os (%s:%s)", self.node.client.addr, self.node.client.port)
+        j.sal.g8os.logger.debug("send create container command to g8os (%s:%s)", self.node.client.addr, self.node.client.port)
         job = self.node.client.container.create(
             root_url=self.flist,
             mount=self.mounts,
@@ -151,7 +150,7 @@ class Container:
 
     def start(self):
         if not self.is_running():
-            logger.debug("start %s", self)
+            j.sal.g8os.logger.debug("start %s", self)
             self._create_container()
             for process in self.init_processes:
                 cmd = "{} {}".format(process['name'], ' '.join(process.get('args', [])))
@@ -166,7 +165,7 @@ class Container:
     def stop(self):
         if not self.is_running():
             return
-        logger.debug("stop %s", self)
+        j.sal.g8os.logger.debug("stop %s", self)
 
         self.node.client.container.terminate(self.id)
         self._client = None
