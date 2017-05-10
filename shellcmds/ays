@@ -10,14 +10,20 @@ from JumpScale import j
 import io
 import time
 import click
-from requests.exceptions import HTTPError
+from requests.exceptions import HTTPError, ConnectionError
 
 repo = None
-ayscl = j.clients.atyourservice.get()
 
 
 def _current_repo_name():
     return j.sal.fs.getBaseName(j.sal.fs.getcwd())
+
+ayscl = j.clients.atyourservice.get()
+
+while not j.sal.process.getProcessByPort(5000):
+    print ("waiting for AYS Server to start...")
+    time.sleep(2)
+
 
 
 def _extract_error(resp):

@@ -154,7 +154,7 @@ class Blueprint:
 
         # first we had to make sure all services do exist, then we can add these properties
         for action_info in self.actions:
-            for service in self.aysrepo.servicesFind(name=action_info['service'],actor=action_info['actor']):
+            for service in self.aysrepo.servicesFind(name=action_info['service'], actor=action_info['actor']):
                 service.scheduleAction(action_info['action_name'], period=action_info['recurring_period'], force=action_info['force'])
                 service.saveAll()
 

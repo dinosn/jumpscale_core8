@@ -94,11 +94,11 @@ class Capnp:
         id = [item for item in schemaInText.split("\n") if item.strip() != ""][0][3:-1]
         return id
 
-    def _getSchemas(self, schemaInText):
+    def _getSchemas(self, schemaInText, cache=True):
         schemaInText = j.data.text.strip(schemaInText)
         schemaInText = schemaInText.strip() + "\n"
         schemaId = self.getId(schemaInText)
-        if schemaId not in self._cache:
+        if schemaId not in self._cache or cache is False:
             nameOnFS = "schema_%s.capnp" % (schemaId)
             path = j.sal.fs.joinPaths(self._capnpVarDir, nameOnFS)
             j.sal.fs.writeFile(filename=path, contents=schemaInText, append=False)
@@ -107,7 +107,7 @@ class Capnp:
             self._cache[schemaId] = schema
         return self._cache[schemaId]
 
-    def getSchemaFromText(self, schemaInText, name="Schema"):
+    def getSchemaFromText(self, schemaInText, name="Schema", cache=True):
         if not schemaInText.strip():
             schemaInText = """
 @%s;
@@ -115,7 +115,7 @@ struct Schema {
 
 }
 """ % j.data.idgenerator.generateCapnpID()
-        schemas = self._getSchemas(schemaInText)
+        schemas = self._getSchemas(schemaInText, cache=cache)
         schema = eval("schemas.%s" % name)
         return schema
 
@@ -141,7 +141,7 @@ struct Schema {
                 args.pop(i+1)
         return args
 
-    def getObj(self, schemaInText, name="Schema", args={}, binaryData=None):
+    def getObj(self, schemaInText, name="Schema", args={}, binaryData=None, cache=True):
 
         # . are removed from . to Uppercase
         args = args.copy()  # to not change the args passed in argument
@@ -151,7 +151,7 @@ struct Schema {
                 args[sanitize_key] = args[key]
                 args.pop(key)
 
-        schema = self.getSchemaFromText(schemaInText, name=name)
+        schema = self.getSchemaFromText(schemaInText, name=name, cache=cache)
 
         if binaryData is not None and binaryData != b'':
             obj = schema.from_bytes_packed(binaryData).as_builder()

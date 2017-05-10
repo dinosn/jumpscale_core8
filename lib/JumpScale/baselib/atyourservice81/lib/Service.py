@@ -269,9 +269,14 @@ class Service:
     def _check_args(self, actor, args):
         """ Checks whether if args are the same as in instance model """
         data = j.data.serializer.json.loads(self.model.dataJSON)
-        for key, value in args.items():
-            sanitized_key = j.data.hrd.sanitize_key(key)
-            if sanitized_key in data and data[sanitized_key] != value:
+        sanitized_args = {j.data.hrd.sanitize_key(key): value for key, value in args.items()}
+        if set(data.keys()).symmetric_difference(set(sanitized_args.keys())):
+            # schema changed
+            self.model.dbobj.dataSchema = actor.model.dbobj.serviceDataSchema
+            self.model.dbobj.data = j.data.capnp.getBinaryData(j.data.capnp.getObj(self.model.dbobj.dataSchema, args=args, name='Schema', cache=False))
+            self.saveAll()
+        for key, value in sanitized_args.items():
+            if key in data and data[key] != value or key not in data:
                 self.processChange(actor=actor, changeCategory="dataschema", args=args)
                 break
 
@@ -503,6 +508,7 @@ class Service:
                 return executor
         return j.tools.executor.getLocal()
 
+
     def processChange(self, actor, changeCategory, args={}, reschedule=False):
         """
         template action change
@@ -517,8 +523,10 @@ class Service:
         # self.logger.debug('process change for %s (%s)' % (self, changeCategory)
 
         if changeCategory == 'dataschema':
-            # We use the args passed without change
-            pass
+            # update arg values
+            for key, value in args.items():
+                key = j.data.hrd.sanitize_key(key)
+                setattr(self.model.data, key, value)
 
         elif changeCategory == 'ui':
             # TODO
