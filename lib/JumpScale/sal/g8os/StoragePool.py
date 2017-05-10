@@ -1,6 +1,7 @@
 from JumpScale import j
 from JumpScale.sal.g8os.abstracts import Mountable
 import os
+import time
 
 
 def _prepare_device(node, devicename):
@@ -16,6 +17,22 @@ def _prepare_device(node, devicename):
 
     if disk.partition_table is None:
         node.client.system('parted -s /dev/{} mklabel gpt mkpart primary 1m 100%'.format(name)).get()
+        partname = '/dev/{}1'.format(name)
+        now = time.time()
+        # check partitions is ready and writable
+        while now + 60 > time.time():
+            try:
+                resp = node.client.bash('test -e {0} && dd if=/dev/zero of={0} bs=4k count=1024'.format(partname)).get()
+                if resp.state == 'SUCCESS':
+                    disk = node.disks.get(name)
+                    if len(disk.partitions) > 0:
+                        return disk.partitions[0]
+                continue
+            except:
+                time.sleep(1)
+                continue
+        else:
+            raise j.exceptions.RuntimeError("Failed to create partition")
         return node.disks.get(name).partitions[0]
     if len(disk.partitions) <= 0:
         disk.mkpart('1m', '100%')
