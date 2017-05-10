@@ -56,6 +56,10 @@ class RunStep:
         jobs = []
         for job in self.jobs:
 
+            # don't re-execute succefull jobs
+            if job.model.state == 'ok':
+                continue
+
             action_name = job.model.dbobj.actionName
             service = job.service
             action_timeout = service.model.actions[action_name].timeout
