@@ -1,6 +1,7 @@
 from JumpScale import j
 from JumpScale.sal.g8os.abstracts import Mountable
 import os
+import re
 import time
 
 
@@ -104,7 +105,10 @@ class StoragePool(Mountable):
             self.umount()
         if zero:
             for device in self.devices:
-                self._client.system('dd if=/dev/zero bs=1M count=500 of={}'.format(device))
+                partition = os.path.basename(device)
+                disk, number = re.match(r'(\D+)(\d+)', partition).groups()
+                self._client.disk.rmpart(disk, int(number))
+                self._client.system('dd if=/dev/zero bs=1M count=500 of={}'.format(disk)).get()
 
     @property
     def mountpoint(self):
