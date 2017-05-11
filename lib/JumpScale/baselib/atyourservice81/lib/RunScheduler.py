@@ -26,6 +26,7 @@ class RunScheduler:
     def __init__(self, repo):
         self.logger = j.logger.get("j.ays.RunScheduler")
         self.repo = repo
+        self._git = j.clients.git.get(repo.path)
         self.queue = asyncio.PriorityQueue(maxsize=0)
         self._retries = []
         self._retries_lock = asyncio.Lock()
@@ -54,6 +55,13 @@ class RunScheduler:
                 return None
         return None
 
+    def _commit(self, run):
+        """
+        create a commit on the ays repo
+        """
+        self.logger.debug("create commit on repo %s for un %s", self.repo.path, run.model.key)
+        msg = "Run {}\n\n{}".format(run.model.key, str(run))
+        self._git.commit(message=msg)
 
     async def start(self):
         """
@@ -79,6 +87,7 @@ class RunScheduler:
             try:
                 self._current = run.model.key
                 await run.execute()
+                self._commit(run)
             except:
                 # exception is handle in the job directly,
                 # catch here to not interrupt the loop
