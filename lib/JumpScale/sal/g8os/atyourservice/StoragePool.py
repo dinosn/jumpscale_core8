@@ -48,7 +48,7 @@ class StoragePoolAys(AYSable):
             info = None
             for disk in disks:
                 disk_name = "/dev/%s" % disk['kname']
-                if device ==  disk_name and disk['mountpoint']:
+                if device == disk_name and disk['mountpoint']:
                     info = disk
                     break
                 for part in disk.get('children', []) or []:
@@ -58,15 +58,16 @@ class StoragePoolAys(AYSable):
                 if info:
                     break
 
-            result = self._client.bash("smartctl -H %s > /dev/null ;echo $?" % disk_name).get()
-            exit_status = int(result.stdout)
             status = 'healthy'
+            if info['subsystems'] != 'block:virtio:pci':
+                result = self._client.bash("smartctl -H %s > /dev/null ;echo $?" % disk_name).get()
+                exit_status = int(result.stdout)
 
-            if exit_status & 1 << 0:
-                raise RuntimeError("Unable to get disk %s status" % disk_name)
-            if (exit_status & 1 << 2) or (exit_status & 1 << 3):
-                status = 'degraded'
-                pool_status = 'degraded'
+                if exit_status & 1 << 0:
+                    raise RuntimeError("Unable to get disk %s status" % disk_name)
+                if (exit_status & 1 << 2) or (exit_status & 1 << 3):
+                    status = 'degraded'
+                    pool_status = 'degraded'
 
             device_map.append({
                 'device': device,
