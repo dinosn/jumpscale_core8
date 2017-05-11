@@ -131,15 +131,12 @@ def fileFunction(dirobj, type, name, args, subobj):
     src_fs = args['src_fs']
 
     dest_dir = dest_current_dir(dest_fs, dirobj)
-    # add new file inode in the current directory
-    dest_dir.addSubItem('contents', subobj)
-    dest_dir.reSerialize()
-    dest_dir.save()
+    dest_dir.fileReplace(subobj, create=True)
 
     # copy aci
     if not dest_fs.aciCollection.exists(subobj.aclkey):
         aci_dest = dest_fs.aciCollection.new()
-        aci_src = src_fs.aciCollection.get(dirobj.dbobj.aclkey)
+        aci_src = src_fs.aciCollection.get(subobj.aclkey)
         aci_dest.dbobj.from_dict(aci_src.dbobj.to_dict())
         logger.debug("copy aci :{}".format(aci_dest.key))
         aci_dest.save()
@@ -150,15 +147,16 @@ def linkFunction(dirobj, type, name, args, subobj):
     src_fs = args['src_fs']
 
     dest_dir = dest_current_dir(dest_fs, dirobj)
-    # add new file inode in the current directory
-    dest_dir.addSubItem('contents', subobj)
-    dest_dir.reSerialize()
-    dest_dir.save()
+    if not dest_dir.linkExists(subobj.name):
+        # add new file inode in the current directory
+        dest_dir.addSubItem('contents', subobj)
+        dest_dir.reSerialize()
+        dest_dir.save()
 
     # copy aci
     if not dest_fs.aciCollection.exists(subobj.aclkey):
         aci_dest = dest_fs.aciCollection.new()
-        aci_src = src_fs.aciCollection.get(dirobj.dbobj.aclkey)
+        aci_src = src_fs.aciCollection.get(subobj.aclkey)
         aci_dest.dbobj.from_dict(aci_src.dbobj.to_dict())
         logger.debug("copy aci :{}".format(aci_dest.key))
         aci_dest.save()
@@ -169,15 +167,16 @@ def specialFunction(dirobj, type, name, args, subobj):
     src_fs = args['src_fs']
 
     dest_dir = dest_current_dir(dest_fs, dirobj)
-    # add new file inode in the current directory
-    dest_dir.addSubItem('contents', subobj)
-    dest_dir.reSerialize()
-    dest_dir.save()
+    if not dest_dir.fileSpecialExists(subobj.name):
+        # add new file inode in the current directory
+        dest_dir.addSubItem('contents', subobj)
+        dest_dir.reSerialize()
+        dest_dir.save()
 
     # copy aci
     if not dest_fs.aciCollection.exists(subobj.aclkey):
         aci_dest = dest_fs.aciCollection.new()
-        aci_src = src_fs.aciCollection.get(dirobj.dbobj.aclkey)
+        aci_src = src_fs.aciCollection.get(subobj.aclkey)
         aci_dest.dbobj.from_dict(aci_src.dbobj.to_dict())
         logger.debug("copy aci :{}".format(aci_dest.key))
         aci_dest.save()

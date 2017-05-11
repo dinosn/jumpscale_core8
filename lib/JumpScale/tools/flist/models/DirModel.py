@@ -13,22 +13,50 @@ class DirModel(base):
         pass
 
     def fileExists(self, name):
-        return not self.fileGet(name, False) is None
+        return not self.fileGet(name) is None
 
     def fileSpecialExists(self, name):
-        return not self.fileSpecialGet(name, False) is None
+        return not self.get(name, 'special') is None
 
     def linkExists(self, name):
-        return not self.fileSpecialGet(name, False) is None
+        return not self.get(name, 'link') is None
 
-    def fileGet(self, name):
+    def get(self, name, type_):
+        """
+        Get file/link/specialfile object
+        """
         for item in self.dbobj.contents:
             which = item.attributes.which()
-            if which != 'file':
+            if which != type_:
                 continue
             if name == item.name:
                 return item
         return None
+
+    def fileGet(self, name):
+        return self.get(name=name, type_='file')
+
+
+    def fileReplace(self, file_obj, create=True):
+        """
+        Replace a file object in the directory with the provided file
+        """
+        changed = False
+        attrs = ('name', 'size', 'aclkey', 'modificationTime', 'creationTime')
+        current_file = self.fileGet(file_obj.name)
+        if current_file is not None:
+            if current_file.modificationTime < file_obj.modificationTime:
+                changed = True
+                for attr in attrs:
+                    current_file.__setattr__(attr, file_obj.__getattr__(attr))
+        else:
+            if create:
+                changed = True
+                # add new file inode in the current directory
+                self.addSubItem('contents', file_obj)
+        if changed:
+            self.reSerialize()
+            self.save()
 
     def filesNew(self, nr):
         newlist = self.dbobj.init("files", nr)
