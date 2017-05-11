@@ -33,7 +33,7 @@ A service is an abstraction for almost anything:
 
 We use only one command `ays` to control everything:
 
-- Convert a blueprint to one or more AYS services by executing `ays repo blueprint`, which will configure all dependencies of each service.
+- Convert a blueprint to one or more AYS services by executing `ays blueprint`, which will configure all dependencies of each service.
 - Install services by executing `ays action install`
 - check `ays --help` for a complete list of available commands
 

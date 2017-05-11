@@ -10,4 +10,4 @@ if not j.sal.fs.exists("/root/.ssh"):
     j.sal.createDir("/root/.ssh")
 ```
 
-For a detailed discussion of SALs go to the [SALs documentation](../../SAL/SAL.md).
+For a detailed discussion of SALs go to the [SALs documentation](../SAL/SAL.md).

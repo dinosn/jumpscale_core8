@@ -36,7 +36,7 @@ cuisine = j.tools.cuisine.get(executor)
   cuisine.core.file_copy("/opt/code/file1", "/opt/code/file2")
   ```
 
-For more information on Cuisine check the [Cuisine documentation](../../Cuisine/Cuisine.md).
+For more information on Cuisine check the [Cuisine documentation](../Cuisine/Cuisine.md).
 
 ```
 !!!
