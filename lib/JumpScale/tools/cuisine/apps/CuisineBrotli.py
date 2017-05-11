@@ -24,7 +24,9 @@ class CuisineBrotli(app):
         C = self.replace(C)
         self.cuisine.core.run(C)
 
-    def install(self):
+    def install(self, reset=False):
+        if reset is False and self.isInstalled():
+            return
         C = """
         cp /tmp/brotli/bin/bro /usr/local/bin/
         rm -rf /tmp/brotli

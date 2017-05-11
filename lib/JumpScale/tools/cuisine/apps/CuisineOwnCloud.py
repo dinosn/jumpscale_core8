@@ -67,7 +67,7 @@ class CuisineOwnCloud(app):
         mv $TMPDIR/owncloud $JSAPPSDIR/owncloud
 
         # copy config.php to new owncloud home httpd/docs
-        /bin/cp -Rf $TMPDIR/ays_owncloud/owncloud/config.php $appDir/owncloud/config/
+        /bin/cp -Rf $TMPDIR/ays_owncloud/owncloud/config.php $JSAPPSDIR/owncloud/config/
         # copy gig theme
         /bin/cp -Rf $TMPDIR/ays_owncloud/owncloud/gig $JSAPPSDIR/owncloud/themes/
 
