@@ -26,7 +26,7 @@ class RunScheduler:
     def __init__(self, repo):
         self.logger = j.logger.get("j.ays.RunScheduler")
         self.repo = repo
-        self._git = j.clients.git.get(repo.path)
+        self._git = j.clients.git.get(repo.path, check_path=False)
         self.queue = asyncio.PriorityQueue(maxsize=0)
         self._retries = []
         self._retries_lock = asyncio.Lock()
