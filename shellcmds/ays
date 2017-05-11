@@ -263,7 +263,8 @@ def show(role, name):
 @service.command()
 @click.option('--role', '-r', default="", help='optional role of the service')
 @click.option('--name', '-n', default="", help='optional name of the service')
-def state(role, name):
+@click.option('--state', '-s', default="", help='display all service actions that have the specified state')
+def state(role, name, state):
     """
     Print the state of the selected services. If not role or instances specified, all services from the repository are selected
     """
@@ -275,6 +276,13 @@ def state(role, name):
             print("Error while getting service: {}".format(_extract_error(e)))
             return
 
+    def filter_service(service):
+        if role and service['role'] != role:
+            return False
+        if name and service['name'] != name:
+            return False
+        return True
+
     try:
         resp = ayscl.api.ays.listServices(_current_repo_name())
     except Exception as e:
@@ -283,16 +291,20 @@ def state(role, name):
 
     services = resp.json()
     services = sorted(services, key=lambda s: s['role'])
-    for service in services:
-        if role and service['role'] != role:
-            continue
-        if name and service['name'] != name:
-            continue
 
-        print('State of service : %s!%s' % (service['role'], service['name']))
+    for service in filter(filter_service, services):
         service = get_service(service['role'], service['name'])
-        for action in service['actions']:
-            print("\t%-25s : %s" % (action['name'], action['state']))
+        if state:
+            for action in service['actions']:
+                if action['state'] == state:
+                    msg = "service: {}!{} action: {} state: {}".format(
+                        service['role'], service['name'], action['name'], action['state']
+                    )
+                    print(msg)
+        else:
+            print('State of service : %s!%s' % (service['role'], service['name']))
+            for action in service['actions']:
+                print("\t%-25s : %s" % (action['name'], action['state']))
 
 
 @service.command()
@@ -548,12 +560,14 @@ def list():
 @run.command()
 @click.option('--key', '-k', default=None, help='key of the run to show')
 @click.option('--logs', '-l', default=False, is_flag=True, help='show logs of the jobs')
-def show(key, logs):
+@click.option('--follow', '-f', is_flag=True, help='follow run execution')
+def show(key, logs, follow):
     """
     show detail of a run.
 
-    If the --key option is not given, show the detail of the last run.
-    if --logs option is given, also show the logs of each job.
+    If the --key option is not set, show the detail of the last run.
+    if --logs option is set, also show the logs of each job.
+    If -f option is set, the command will print the status of the run until it succeed.
     """
     if key is None:
         try:
@@ -574,7 +588,30 @@ def show(key, logs):
         print("Error during retreive of the run {}: {}".format(key, _extract_error(e)))
         return
 
-    _print_run(resp.json(), logs=logs)
+    run = resp.json()
+    if not follow:
+        _print_run(run, logs=logs)
+        return
+
+    running = True
+    while running:
+        try:
+            resp = ayscl.api.ays.getRun(runid=run['key'], repository=_current_repo_name())
+        except Exception as e:
+            print("Error during retreive of the run {}: {}".format(key, _extract_error(e)))
+            return
+
+        run = resp.json()
+        j.tools.console.cls()
+        now = j.data.time.epoch2pythonDateTime(j.data.time.epoch)
+        print("Current state of the run at {}:\n".format(now.strftime("%a %d %H:%M:%S %Y")))
+        _print_run(run)
+
+        running = run['state'] != 'ok'
+
+        if running:
+            time.sleep(2)
+
 
 
 @cli.command()

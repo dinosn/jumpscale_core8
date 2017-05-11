@@ -653,7 +653,7 @@ class Service:
             self._ensure_recurring()
 
 
-        if not force and action_model.state == 'ok' and action not in ['start', 'stop']:
+        if not force and action_model.state == 'ok':
             self.logger.info("action %s already in ok state, don't schedule again" % action_model.name)
         else:
             self.logger.info('schedule action %s on %s' % (action, self))

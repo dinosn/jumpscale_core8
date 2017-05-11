@@ -56,7 +56,7 @@ class RunStep:
         jobs = []
         for job in self.jobs:
 
-            # don't re-execute succefull jobs
+            # don't re-execute succesfull jobs
             if job.model.state == 'ok':
                 continue
 
@@ -76,22 +76,11 @@ class RunStep:
             jobs.append(job)
 
         results = await asyncio.gather(*coros, return_exceptions=True)
-        error = False
-        for i in range(len(results)):
-            result = results[i]
-            job = jobs[i]
-            repo = job.service.aysrepo if job.service else None
-
+        self.state = 'ok'
+        for result in results:
             if isinstance(result, Exception):
                 self.state = 'error'
-                error = True
-                # if the job failed, try to reschedule it
-                # the run scheduler holds the logic of retry delay
-                # we just need to give him the service and action to retry
-                if repo:
-                    await repo.run_scheduler.retry(job.service, job.model.dbobj.actionName)
 
-        self.state = 'ok' if not error else 'error'
         self.logger.info("runstep {}: {}".format(self.dbobj.number, self.state))
 
     def __repr__(self):

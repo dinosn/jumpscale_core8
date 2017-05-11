@@ -142,9 +142,8 @@ class StorageServer:
     @classmethod
     def from_ays(cls, ardb_services):
         ardb = ARDB.from_ays(ardb_services)
-        container = Container.from_ays(ardb_services.parent)
         storage_server = cls(None)
-        storage_server.container = container
+        storage_server.container = ardb.container
         storage_server.ardb = ardb
         return storage_server
 

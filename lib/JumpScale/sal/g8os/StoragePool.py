@@ -178,6 +178,44 @@ class StoragePool(Mountable):
         mountpoint = self._get_mountpoint()
         return self._client.btrfs.subvol_list(mountpoint) or []
 
+    def get_devices_and_status(self):
+        device_map = []
+        disks = self._client.disk.list()['blockdevices']
+        pool_status = 'healthy'
+        for device in self.devices:
+            info = None
+            for disk in disks:
+                disk_name = "/dev/%s" % disk['kname']
+                if device == disk_name and disk['mountpoint']:
+                    info = disk
+                    break
+                for part in disk.get('children', []) or []:
+                    if device == "/dev/%s" % part['kname']:
+                        info = part
+                        break
+                if info:
+                    break
+
+            status = 'healthy'
+            if info['subsystems'] != 'block:virtio:pci':
+                result = self._client.bash("smartctl -H %s > /dev/null ;echo $?" % disk_name).get()
+                exit_status = int(result.stdout)
+
+                if exit_status & 1 << 0:
+                    status = "unknown"
+                    pool_status = 'degraded'
+                if (exit_status & 1 << 2) or (exit_status & 1 << 3):
+                    status = 'degraded'
+                    pool_status = 'degraded'
+
+            device_map.append({
+                'device': device,
+                'partUUID': info['partuuid'] or '' if info else '',
+                'status': status,
+            })
+
+        return device_map, pool_status
+
     def list(self):
         subvolumes = []
         for subvol in self.raw_list():
