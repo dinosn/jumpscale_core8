@@ -3,6 +3,7 @@ from JumpScale.sal.g8os.Disk import Disks, DiskType
 from JumpScale.sal.g8os.Container import Containers
 from JumpScale.sal.g8os.StoragePool import StoragePools
 from collections import namedtuple
+from datetime import datetime
 import netaddr
 
 Mount = namedtuple('Mount', ['device', 'mountpoint', 'fstype', 'options'])
@@ -90,12 +91,23 @@ class Node:
         """
         mount the fscache storage pool and copy the content of the in memmory fs inside
         """
-        if storagepool.mountpoint != '/var/cache/containers':
-            storagepool.umount()
-
-        if not storagepool.mountpoint:
-            storagepool.mount('/var/cache/containers')
+        mountedpaths = [mount.mountpoint for mount in self.list_mounts()]
+        containerpath = '/var/cache/containers'
+        if containerpath not in mountedpaths:
+            self.client.disk.mount(storagepool.devicename, containerpath, ['subvol=filesystems/containercache'])
             self.client.bash('rm -fr /var/cache/containers/*')
+        logpath = '/var/log'
+        if logpath not in mountedpaths:
+            snapname = '{:%Y-%m-%d-%H-%M}'.format(datetime.now())
+            fs = storagepool.get('logs')
+            fs.create(snapname)
+            # now delete withouth snapshots and create clean
+            fs.delete(includesnapshots=False)
+            storagepool.create('logs')
+            self.client.bash('mkdir /tmp/log && mv /var/log/* /tmp/log/')
+            self.client.disk.mount(storagepool.devicename, logpath, ['subvol=filesystems/logs'])
+            self.client.bash('mv /tmp/log/* /var/log/ && mv /var/log/core.log /var/log/core.log.startup').get()
+            self.client.logger.reopen()
 
     def ensure_persistance(self, name='fscache'):
         """
@@ -119,6 +131,15 @@ class Node:
         if fscache_sp is None:
             disk = self._eligible_fscache_disk(disks)
             fscache_sp = self.storagepools.create(name, devices=[disk.devicename], metadata_profile='single', data_profile='single', overwrite=True)
+        fscache_sp.mount()
+        try:
+            fscache_sp.get('containercache')
+        except ValueError:
+            fscache_sp.create('containercache')
+        try:
+            fscache_sp.get('logs')
+        except ValueError:
+            fscache_sp.create('logs')
 
         # mount the storage pool
         self._mount_fscache(fscache_sp)
