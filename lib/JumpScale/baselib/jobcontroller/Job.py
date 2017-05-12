@@ -121,6 +121,17 @@ class Job:
     def __del__(self):
         self.cleanup()
 
+    @property
+    def _loop(self):
+        if self.service and self.service.aysrepo._loop:
+            return self.service.aysrepo._loop
+        try:
+            loop = asyncio.get_event_loop()
+        except:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        return loop
+
     def cleanup(self):
         """
         clean the logger handler from the job object so it doesn't make the job stays in memory
@@ -255,8 +266,7 @@ class Job:
             self.model.dbobj.debug = self.sourceLoader.source.find('ipdb') != -1 or \
                                      self.sourceLoader.source.find('IPython') != -1
 
-        loop = asyncio.get_event_loop()
-        self._future = loop.run_in_executor(None, self.method, self)
+        self._future = self._loop.run_in_executor(None, self.method, self)
         # register callback to deal with logs and state of the job after execution
         self._future.add_done_callback(functools.partial(_execute_cb, self))
 
