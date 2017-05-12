@@ -1,6 +1,7 @@
 import json
 from JumpScale import j
 
+
 class Containers:
     def __init__(self, node):
         self.node = node
@@ -131,13 +132,16 @@ class Container:
 
     def _create_container(self, timeout=60):
         j.sal.g8os.logger.debug("send create container command to g8os")
+        tags = [self.name]
+        if self.hostname and self.hostname != self.name:
+            tags.append(self.hostname)
         job = self.node.client.container.create(
             root_url=self.flist,
             mount=self.mounts,
             host_network=self.host_network,
             nics=self.nics,
             port=self.ports,
-            tags=[self.name],
+            tags=tags,
             hostname=self.hostname,
             storage=self.storage,
         )

@@ -1,5 +1,4 @@
 from JumpScale import j
-from JumpScale.sal.g8os.Container import Container
 from JumpScale.sal.g8os.ARDB import ARDB
 
 

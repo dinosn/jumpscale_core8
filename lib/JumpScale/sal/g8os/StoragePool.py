@@ -23,7 +23,7 @@ def _prepare_device(node, devicename):
         # check partitions is ready and writable
         while now + 60 > time.time():
             try:
-                resp = node.client.bash('test -e {0} && dd if=/dev/zero of={0} bs=4k count=1024'.format(partname)).get()
+                resp = node.client.bash('test -b {0} && dd if=/dev/zero of={0} bs=4k count=1024'.format(partname)).get()
                 if resp.state == 'SUCCESS':
                     disk = node.disks.get(name)
                     if len(disk.partitions) > 0:
