@@ -123,8 +123,6 @@ class Job:
 
     @property
     def _loop(self):
-        if self.service and self.service.aysrepo._loop:
-            return self.service.aysrepo._loop
         try:
             loop = asyncio.get_event_loop()
         except:
