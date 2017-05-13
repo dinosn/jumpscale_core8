@@ -298,7 +298,8 @@ class FileSystem:
         self.name = name
         self.pool = pool
         self._client = pool.node.client
-        self.path = os.path.join(self.pool.mountpoint, 'filesystems', name)
+        self.subvolume = "filesystems/{}".format(name)
+        self.path = os.path.join(self.pool.mountpoint, self.subvolume)
         self.snapshotspath = os.path.join(self.pool.mountpoint, 'snapshots', self.name)
         self._ays = None
 
@@ -367,6 +368,7 @@ class Snapshot:
         self._client = filesystem.pool.node.client
         self.name = name
         self.path = os.path.join(self.filesystem.snapshotspath, name)
+        self.subvolume = "snapshots/{}/{}".format(self.filesystem.name, name)
 
     def rollback(self):
         self.filesystem.delete(False)

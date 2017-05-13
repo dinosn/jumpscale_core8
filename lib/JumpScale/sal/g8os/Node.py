@@ -98,16 +98,17 @@ class Node:
             self.client.bash('rm -fr /var/cache/containers/*')
         logpath = '/var/log'
         if logpath not in mountedpaths:
+            # logs is empty filesystem which we create a snapshot on to store logs of current boot
             snapname = '{:%Y-%m-%d-%H-%M}'.format(datetime.now())
             fs = storagepool.get('logs')
-            fs.create(snapname)
-            # now delete withouth snapshots and create clean
-            fs.delete(includesnapshots=False)
-            storagepool.create('logs')
+            snapshot = fs.create(snapname)
             self.client.bash('mkdir /tmp/log && mv /var/log/* /tmp/log/')
-            self.client.disk.mount(storagepool.devicename, logpath, ['subvol=filesystems/logs'])
+            self.client.disk.mount(storagepool.devicename, logpath, ['subvol={}'.format(snapshot.subvolume)])
             self.client.bash('mv /tmp/log/* /var/log/ && mv /var/log/core.log /var/log/core.log.startup').get()
             self.client.logger.reopen()
+            # startup syslogd and klogd
+            self.client.system('syslogd -n -O /var/log/messages')
+            self.client.system('klogd -n')
 
     def ensure_persistance(self, name='fscache'):
         """
