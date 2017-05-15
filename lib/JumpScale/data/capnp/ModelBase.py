@@ -375,7 +375,7 @@ class ModelBaseCollection:
                 collection=self)
         return model
 
-    def list(self,  query=None):
+    def list(self, query=None):
             """
             List all keys of a index
             @param if query not none then will use the index to do a query and ignore other elements
@@ -386,11 +386,13 @@ class ModelBaseCollection:
                 http://docs.peewee-orm.com/en/latest/peewee/querying.html
                 the query is the statement in the where
             """
-
-            if query != None:
+            res = []
+            if query is not None:
                 res = [item.key for item in query]
+            elif hasattr(self._index, 'select'):
+                res = [item.key for item in self._index.select().order_by(self._index.modTime.desc())]
             else:
-                res = [item.key for item in self.index.select().order_by(self.index.modTime.desc())]
+                return self._index.list('*')
 
             return res
 
