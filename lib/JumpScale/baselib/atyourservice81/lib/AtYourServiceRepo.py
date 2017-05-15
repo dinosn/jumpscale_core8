@@ -50,6 +50,9 @@ class AtYourServiceRepoCollection:
         self._loop.call_later(60, self._load)
 
     def loadRepo(self, path):
+        ayspath = j.sal.fs.joinPaths(path, ".ays")
+        if j.sal.fs.exists(path) and not j.sal.fs.exists(ayspath):
+            j.sal.fs.touch(ayspath)
         if path not in self._repos:
             self.logger.debug("Loading AYS repo {}".format(path))
             try:
@@ -207,7 +210,11 @@ class AtYourServiceRepo():
         j.sal.fs.removeDirTree(j.sal.fs.joinPaths(self.path, "actors"))
         j.sal.fs.removeDirTree(j.sal.fs.joinPaths(self.path, "services"))
         j.sal.fs.removeDirTree(j.sal.fs.joinPaths(self.path, "recipes"))  # for old time sake
+
         j.atyourservice.aysRepos.delete(self)
+        ayspath = j.sal.fs.joinPaths(self.path, ".ays")
+        j.sal.fs.remove(ayspath)
+        self.logger = None
 
     async def destroy(self):
         await self.delete()
@@ -218,7 +225,6 @@ class AtYourServiceRepo():
         Enable the no_exec mode.
         Once this mode is enabled, no action will ever be execute.
         But the state of the action will be updated as if everything went fine (state ok)
-
         This mode can be used for demo or testing
         """
         # self.model.enable_no_exec()
