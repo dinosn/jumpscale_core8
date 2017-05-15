@@ -99,3 +99,8 @@ class ServicesCollection(ModelBaseCollection):
         for key in self.list(name, actor, state, producer=producer, parent=parent):
             res.append(self.get(key))
         return res
+
+    def destroy(self):
+        super().destroy()
+        self.services = {}
+        self.logger = None

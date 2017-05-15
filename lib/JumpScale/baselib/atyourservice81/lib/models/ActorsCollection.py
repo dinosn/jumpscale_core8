@@ -72,3 +72,8 @@ class ActorsCollection(ModelBaseCollection):
         for key in self._list_keys(name, state):
             res.append(self.get(key))
         return res
+
+    def destroy(self):
+        super().destroy()
+        self.actors = {}
+        self.logger = None
