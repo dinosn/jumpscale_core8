@@ -94,8 +94,10 @@ class Node:
         mountedpaths = [mount.mountpoint for mount in self.list_mounts()]
         containerpath = '/var/cache/containers'
         if containerpath not in mountedpaths:
-            self.client.disk.mount(storagepool.devicename, containerpath, ['subvol=filesystems/containercache'])
-            self.client.bash('rm -fr /var/cache/containers/*')
+            if storagepool.exists('containercache'):
+                storagepool.delete('containercache')
+            fs = storagepool.create('containercache')
+            self.client.disk.mount(storagepool.devicename, containerpath, ['subvol={}'.format(fs.subvolume)])
         logpath = '/var/log'
         if logpath not in mountedpaths:
             # logs is empty filesystem which we create a snapshot on to store logs of current boot
@@ -104,7 +106,7 @@ class Node:
             snapshot = fs.create(snapname)
             self.client.bash('mkdir /tmp/log && mv /var/log/* /tmp/log/')
             self.client.disk.mount(storagepool.devicename, logpath, ['subvol={}'.format(snapshot.subvolume)])
-            self.client.bash('mv /tmp/log/* /var/log/ && mv /var/log/core.log /var/log/core.log.startup').get()
+            self.client.bash('mv /tmp/log/* /var/log/').get()
             self.client.logger.reopen()
             # startup syslogd and klogd
             self.client.system('syslogd -n -O /var/log/messages')
@@ -133,10 +135,6 @@ class Node:
             disk = self._eligible_fscache_disk(disks)
             fscache_sp = self.storagepools.create(name, devices=[disk.devicename], metadata_profile='single', data_profile='single', overwrite=True)
         fscache_sp.mount()
-        try:
-            fscache_sp.get('containercache')
-        except ValueError:
-            fscache_sp.create('containercache')
         try:
             fscache_sp.get('logs')
         except ValueError:
