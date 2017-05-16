@@ -70,22 +70,14 @@ class AtYourServiceRepoCollection:
 
         res = []
 
-        def callbackFunctionDir(path, arg):
-            if j.sal.fs.exists("%s/.ays" % path):
-                arg[1].append(path)
+        cmd = """find %s \( -wholename '*.ays' \) -exec readlink -f {} \;""" % (path)
+        rc, out, err = j.sal.process.execute(cmd, die=False)
+        for reponame in out.splitlines():
+            reponame = reponame.split(".ays")[0]
+            if reponame.startswith(".") or reponame.startswith("_"):
+                continue
+            res.append(reponame)
 
-        def callbackForMatchDir(path, arg):
-            base = j.sal.fs.getBaseName(path)
-            if base in [".git", ".hg", ".github"]:
-                return False
-            depth = len(j.sal.fs.pathRemoveDirPart(path, arg[0]).split("/"))
-            # print("%s:%s" % (depth, j.sal.fs.pathRemoveDirPart(path, arg[0])))
-            if depth < 6:
-                return True
-            return False
-
-        j.sal.fswalker.walkFunctional(path, callbackFunctionFile=None, callbackFunctionDir=callbackFunctionDir, arg=[path, res],
-                                      callbackForMatchDir=callbackForMatchDir, callbackForMatchFile=lambda x, y: False)
         return res
 
     def list(self):
