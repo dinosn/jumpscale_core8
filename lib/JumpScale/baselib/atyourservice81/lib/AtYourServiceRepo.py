@@ -317,7 +317,7 @@ class AtYourServiceRepo():
 
     def actorTemplatesFind(self, name="", domain="", role=''):
         res = []
-        for template in self.templates:
+        for template in self.templates.values():
             if not(name == "" or template.name == name):
                 # no match continue
                 continue
