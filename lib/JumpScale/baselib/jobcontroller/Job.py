@@ -10,6 +10,7 @@ import functools
 import logging
 import traceback
 
+
 colored_traceback.add_hook(always=True)
 
 
@@ -136,8 +137,19 @@ class Job:
         clean the logger handler from the job object so it doesn't make the job stays in memory
         """
         self.logger.removeHandler(self._logHandler)
+        jc_log_refs = j.logger.logging.manager.loggerDict['j.jobcontroller']
+        job_log_refs = j.logger.logging.manager.loggerDict['j.jobcontroller.job']
+
+        # Properly cleaning logger referernces in logging module to avoid memory leaks.
+        del jc_log_refs.loggerMap[self.logger]
+        del job_log_refs.loggerMap[self.logger]
+        del j.logger.logging.manager.loggerDict[self.logger.name]
+
+        for h in self.logger.handlers:
+            self.logger.removeHandler(h)
         self._logHandler = None
         self.logger = None
+
 
     @property
     def action(self):

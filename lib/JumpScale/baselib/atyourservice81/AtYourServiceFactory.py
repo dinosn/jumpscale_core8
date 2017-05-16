@@ -72,6 +72,7 @@ class AtYourServiceFactory:
                 j.core.jobcontroller.db.jobs.delete(actor=job.dbobj.actorName, service=job.dbobj.serviceName,
                                                     action=job.dbobj.actionName, state=job.state,
                                                     serviceKey=job.dbobj.serviceKey, toEpoch=limit)
+                del job
         self._cleanupHandle = self.loop.call_later(sleep, self.cleanup)
 
     def _start(self, loop=None):
