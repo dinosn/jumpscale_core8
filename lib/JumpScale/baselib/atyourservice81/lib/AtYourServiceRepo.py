@@ -11,6 +11,8 @@ from JumpScale.baselib.atyourservice81.lib.AtYourServiceDependencies import crea
 from JumpScale.baselib.atyourservice81.lib.RunScheduler import RunScheduler
 
 import asyncio
+import inotify.adapters
+import threading
 from collections import namedtuple
 
 import colored_traceback
@@ -47,7 +49,56 @@ class AtYourServiceRepoCollection:
                 self.logger.info("repo {} doesnt exists anymore, unload".format(repo.path))
                 del self._repos[repo.path]
 
-        self._loop.call_later(60, self._load)
+        t = threading.Thread(target=self._watch_repos)
+        t.start()
+
+    def _watch_repos(self):
+        mask = inotify.constants.IN_CLOSE_WRITE | inotify.constants.IN_MOVE | inotify.constants.IN_CREATE | inotify.constants.IN_DELETE | inotify.constants.IN_MODIFY
+        i = inotify.adapters.InotifyTrees([d.encode() for d in [j.dirs.VARDIR, j.dirs.CODEDIR]], mask=mask)
+
+        def handle_file(dirname, filename, event):
+            if filename.endswith('.log'):
+                return
+            full_path = j.sal.fs.joinPaths(dirname, filename)
+            params = dirname.split('/')
+            if filename == '.ays' or j.sal.fs.exists(j.sal.fs.joinPaths(full_path, '.ays')) or full_path in self._repos:
+                reponame = dirname if filename == '.ays' else full_path
+                if event[0].mask & (inotify.constants.IN_MOVED_TO | inotify.constants.IN_CREATE):
+                    self.logger.debug("AYS repo added {}".format(reponame))
+                    try:
+                        repo = AtYourServiceRepo(reponame)
+                        self._repos[repo.path] = repo
+                    except Exception as e:
+                        self.logger.exception("can't load repo at {}: {}".format(reponame, str(e)))
+                        if j.atyourservice.debug:
+                            raise
+                elif event[0].mask & (inotify.constants.IN_MOVED_FROM | inotify.constants.IN_DELETE):
+                    self.logger.debug("AYS repo removed {}".format(reponame))
+                    self._repos.pop(reponame, None)
+                return
+
+            if params[0] == '':
+                params.pop(0)
+                params[0] = '/' + params[0]
+            for i in range(len(params), 0, -1):
+                if j.sal.fs.exists(j.sal.fs.joinPaths(*params[0:i], '.ays')):
+                    path = j.sal.fs.joinPaths(*params[0:i])
+                    if any(full_path.startswith(j.sal.fs.joinPaths(path, i)) for i in ('templates/', 'actorTemplates/', 'tests/')):
+                        self.logger.debug("AYS repo changed {}".format(path))
+                        try:
+                            repo = AtYourServiceRepo(path)
+                            self._repos[repo.path] = repo
+                            return
+                        except Exception as e:
+                            self.logger.exception("can't load repo at {}: {}".format(path, str(e)))
+                            if j.atyourservice.debug:
+                                raise
+
+        for event in i.event_gen():
+            if event is not None:
+                (header, type_names, dirname, filename) = event
+                handle_file(dirname.decode(), filename.decode(), event)
+
 
     def loadRepo(self, path):
         ayspath = j.sal.fs.joinPaths(path, ".ays")
@@ -141,7 +192,14 @@ class AtYourServiceRepo():
         self.git = j.clients.git.get(self.path, check_path=False)
         self._db = None
         self.no_exec = False
-        self._loop = asyncio.get_event_loop()
+
+        try:
+            loop = asyncio.get_event_loop()
+        except:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+        self._loop = loop
 
         self.run_scheduler = RunScheduler(self)
         self._run_scheduler_task = self._loop.create_task(self.run_scheduler.start())
