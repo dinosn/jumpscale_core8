@@ -3,6 +3,7 @@ from JumpScale.baselib.atyourservice81.lib.ActorTemplate import ActorTemplate
 import asyncio
 import os
 
+
 def searchActorTemplates(path, is_global=False):
     """
     walk function that look recursively into 'path' after actor templates directories
@@ -10,10 +11,9 @@ def searchActorTemplates(path, is_global=False):
     """
     res = set()
     actortemplatessearch = ""
-    if is_global:
-        actortemplatessearch = "-wholename '*actorTemplates/*actions.py' -or -wholename '*actorTemplates/*schema.capnp' -or -wholename '*actorTemplates/*config.yaml'"
-    cmd = """find %s \( -wholename '*templates/*actions.py' -or -wholename '*templates/*schema.capnp' -or -wholename '*templates/*config.yaml' -or -wholename '*tests/*actions.py' -or -wholename '*tests/*schema.capnp' -or -wholename '*tests/*config.yaml' %s \) -exec readlink -f {} \;
-""" % (path, actortemplatessearch)
+    if not is_global:
+        actortemplatessearch = " -or -wholename '*actorTemplates/*actions.py' -or -wholename '*actorTemplates/*schema.capnp' -or -wholename '*actorTemplates/*config.yaml'"
+    cmd = """find %s \( -wholename '*templates/*actions.py' -or -wholename '*templates/*schema.capnp' -or -wholename '*templates/*config.yaml' -or -wholename '*tests/*actions.py' -or -wholename '*tests/*schema.capnp' -or -wholename '*tests/*config.yaml' %s \) -exec readlink -f {} \;""" % (path, actortemplatessearch)
     rc, out, err = j.sal.process.execute(cmd, die=False, showout=False)
     if rc == 0:
         return out.splitlines()
@@ -30,31 +30,6 @@ class TemplateRepoCollection:
         self._loop = asyncio.get_event_loop()  # TODO: question why do we need this
         self._template_repos = {}
         self._load()
-
-#     def _load(self):
-#         """
-#         Walk over FS. Register AYS repos to DB
-#         """
-#         path = j.dirs.CODEDIR
-#         #repos_path = (root for root, dirs, files in os.walk(path) if '.ays' in files)
-#
-#         repos = []
-#         cmd = """find /opt/code \( -wholename '*templates/*actions.py' -or -wholename '*templates/*schema.capnp' -or -wholename '*templates/*config.yaml' -or -wholename '*tests/*actions.py' -or -wholename '*tests/*schema.capnp' -or -wholename '*tests/*config.yaml' \) -exec readlink -f {} \;
-# """
-#         rc, out, err = j.sal.process.execute(cmd, die=False)
-#         if rc == 0:
-#             for l in out.splitlines():
-#                 if 'templates' in l:
-#                     self.create(l.split("templates")[0])
-#                 elif 'tests' in l:
-#                     self.create(l.split("tests")[0])
-#                 elif 'actorTemplates' in l:
-#                     self.create(l.split("actorTemplates")[0])
-#
-#         #import ipdb; ipdb.set_trace()
-#
-#         # for repo_path in repos_path:
-#         #     repos.append(self.create(repo_path))
 
     def _load(self):
         self.logger.info("reload actor templates repos")

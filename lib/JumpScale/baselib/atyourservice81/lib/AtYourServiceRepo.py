@@ -71,7 +71,7 @@ class AtYourServiceRepoCollection:
         res = []
 
         cmd = """find %s \( -wholename '*.ays' \) -exec readlink -f {} \;""" % (path)
-        rc, out, err = j.sal.process.execute(cmd, die=False)
+        rc, out, err = j.sal.process.execute(cmd, die=False, showout=False)
         for reponame in out.splitlines():
             reponame = reponame.split(".ays")[0]
             if reponame.startswith(".") or reponame.startswith("_"):
@@ -136,7 +136,7 @@ class AtYourServiceRepo():
 
     def __init__(self, path):
         self.logger = j.logger.get('j.atyourservice')
-        self.path = j.sal.fs.pathNormalize(path)
+        self.path = j.sal.fs.pathNormalize(path).rstrip("/")
         self.name = j.sal.fs.getBaseName(self.path)
         self.git = j.clients.git.get(self.path, check_path=False)
         self._db = None
