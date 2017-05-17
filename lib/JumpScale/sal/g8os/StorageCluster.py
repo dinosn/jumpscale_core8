@@ -43,9 +43,9 @@ class StorageCluster:
                 'nodes': [node.name for node in self.nodes]}
         for storageserver in self.storage_servers:
             if 'metadata' in storageserver.name:
-                data['metadataStorage'] = storageserver.ardb.bind
+                data['metadataStorage'] = {'address': storageserver.ardb.bind}
             else:
-                data['dataStorage'].append(storageserver.ardb.bind)
+                data['dataStorage'].append({'address': storageserver.ardb.bind})
         return data
 
     @property
