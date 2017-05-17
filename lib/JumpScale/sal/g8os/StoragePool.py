@@ -103,7 +103,7 @@ class StoragePool(Mountable):
                 partition = os.path.basename(device)
                 disk, number = re.match(r'(\D+)(\d+)', partition).groups()
                 self._client.disk.rmpart(disk, int(number))
-                self._client.system('dd if=/dev/zero bs=1M count=500 of={}'.format(disk)).get()
+                self._client.system('dd if=/dev/zero bs=1M count=500 of=/dev/{}'.format(disk)).get()
 
     @property
     def mountpoint(self):
