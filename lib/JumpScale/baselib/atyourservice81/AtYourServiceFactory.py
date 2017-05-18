@@ -9,6 +9,8 @@ from JumpScale.baselib.atyourservice81.lib.AtYourServiceTester import AtYourServ
 import colored_traceback
 import os
 import sys
+import inotify.adapters
+import threading
 if "." not in sys.path:
     sys.path.append(".")
 
@@ -28,6 +30,7 @@ class AtYourServiceFactory:
         self.debug = j.core.db.get("atyourservice.debug") == 1
         self.dev_mode = False
         self.logger = j.logger.get('j.atyourservice')
+        self.started = False
 
         self.baseActions = {}
         self.templateRepos = None
@@ -79,11 +82,28 @@ class AtYourServiceFactory:
         self.loop = loop or asyncio.get_event_loop()
         self.templateRepos = TemplateRepoCollection()  # actor templates repositories
         self.aysRepos = AtYourServiceRepoCollection()  # ays repositories
+        self.started = True
+        t = threading.Thread(target=self._watch_repos)
+        t.start()
         if not self._cleanupHandle:
             self._cleanupHandle = self.loop.call_soon(self.cleanup)
 
+    def _watch_repos(self):
+        mask = inotify.constants.IN_MOVE | inotify.constants.IN_CREATE | inotify.constants.IN_DELETE
+        i = inotify.adapters.InotifyTrees([d.encode() for d in [j.dirs.VARDIR, j.dirs.CODEDIR]], mask=mask)
+
+        for event in i.event_gen():
+            if not self.started:
+                return
+            if event is not None:
+                (header, type_names, dirname, filename) = event
+                for repos in [self.aysRepos, self.templateRepos]:
+                    if any(dirname.decode().startswith(d) for d in repos.FSDIRS):
+                        repos.handle_fs_events(dirname.decode(), filename.decode(), event)
+
     async def _stop(self):
         self.logger.info("stopping AtYourService")
+        self.started = False
         to_wait = [repo.stop() for repo in self.aysRepos.list()]
         await asyncio.wait(to_wait)
 

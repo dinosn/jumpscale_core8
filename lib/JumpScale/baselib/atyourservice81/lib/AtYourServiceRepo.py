@@ -11,15 +11,15 @@ from JumpScale.baselib.atyourservice81.lib.AtYourServiceDependencies import crea
 from JumpScale.baselib.atyourservice81.lib.RunScheduler import RunScheduler
 
 import asyncio
-import inotify.adapters
-import threading
 from collections import namedtuple
+import inotify
 
 import colored_traceback
 colored_traceback.add_hook(always=True)
 
 
 class AtYourServiceRepoCollection:
+    FSDIRS = [j.dirs.VARDIR, j.dirs.CODEDIR]
 
     def __init__(self):
         self.logger = j.logger.get('j.atyourservice')
@@ -30,7 +30,7 @@ class AtYourServiceRepoCollection:
     def _load(self):
         self.logger.info("reload AYS repos")
         # search repo on the filesystem
-        for dir_path in [j.dirs.VARDIR, j.dirs.CODEDIR]:
+        for dir_path in self.FSDIRS:
             self.logger.debug("search ays repo in {}".format(dir_path))
             for path in self._searchAysRepos(dir_path):
                 self.logger.debug("AYS repo found {}".format(path))
@@ -42,44 +42,31 @@ class AtYourServiceRepoCollection:
                     if j.atyourservice.debug:
                         raise
 
-        t = threading.Thread(target=self._watch_repos)
-        t.start()
+    def handle_fs_events(self, dirname, filename, event):
+        if filename.endswith('.log'):
+            return
 
-    def _watch_repos(self):
-        mask = inotify.constants.IN_MOVE | inotify.constants.IN_CREATE | inotify.constants.IN_DELETE
-        i = inotify.adapters.InotifyTrees([d.encode() for d in [j.dirs.VARDIR, j.dirs.CODEDIR]], mask=mask)
-
-        def handle_file(dirname, filename, event):
-            if filename.endswith('.log'):
+        full_path = j.sal.fs.joinPaths(dirname, filename)
+        current_path = full_path
+        while current_path:
+            if j.sal.fs.exists(j.sal.fs.joinPaths(current_path, '.ays')):
+                if event[0].mask & (inotify.constants.IN_MOVED_TO | inotify.constants.IN_CREATE):
+                    if current_path not in self._repos:
+                        self.logger.debug("AYS repo added {}".format(current_path))
+                        try:
+                            repo = AtYourServiceRepo(current_path)
+                            self._repos[repo.path] = repo
+                        except Exception as e:
+                            self.logger.exception("can't load repo at {}: {}".format(current_path, str(e)))
+                            if j.atyourservice.debug:
+                                raise
                 return
-
-            params = dirname.split('/')
-            if params[0] == '':
-                params.pop(0)
-                params[0] = '/' + params[0]
-            for i in range(len(params), 0, -1):
-                if j.sal.fs.exists(j.sal.fs.joinPaths(*params[0:i], '.ays')):
-                    path = j.sal.fs.joinPaths(*params[0:i])
-                    if event[0].mask & (inotify.constants.IN_MOVED_TO | inotify.constants.IN_CREATE):
-                        if path not in self._repos:
-                            self.logger.debug("AYS repo added {}".format(path))
-                            try:
-                                repo = AtYourServiceRepo(path)
-                                self._repos[repo.path] = repo
-                                return
-                            except Exception as e:
-                                self.logger.exception("can't load repo at {}: {}".format(path, str(e)))
-                                if j.atyourservice.debug:
-                                    raise
-                    elif event[0].mask & (inotify.constants.IN_MOVED_FROM | inotify.constants.IN_DELETE):
-                        self.logger.debug("AYS repo removed {}".format(path))
-                        self._repos.pop(path, None)
-
-        for event in i.event_gen():
-            if event is not None:
-                (header, type_names, dirname, filename) = event
-                handle_file(dirname.decode(), filename.decode(), event)
-
+            current_path = j.sal.fs.getParent(current_path)
+        if event[0].mask & (inotify.constants.IN_MOVED_FROM | inotify.constants.IN_DELETE):
+            if filename in ['.ays', '.git'] or full_path in self._repos:
+                repo_path = dirname if filename in ['.ays', '.git'] else full_path
+                self.logger.debug("AYS repo removed {}".format(full_path))
+                self._repos.pop(repo_path, None)
 
     def loadRepo(self, path):
         ayspath = j.sal.fs.joinPaths(path, ".ays")
