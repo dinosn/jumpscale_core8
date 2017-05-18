@@ -17,17 +17,16 @@ def _prepare_device(node, devicename):
         raise ValueError("device {} not found".format(name))
 
     node.client.system('parted -s /dev/{} mklabel gpt mkpart primary 1m 100%'.format(name)).get()
-    partname = '/dev/{}1'.format(name)
     now = time.time()
     # check partitions is ready and writable
     while now + 60 > time.time():
         try:
-            resp = node.client.bash('test -b {0} && dd if={0} of=/dev/null bs=4k count=1024'.format(partname)).get()
-            if resp.state == 'SUCCESS':
-                disk = node.disks.get(name)
-                if len(disk.partitions) > 0:
-                    return disk.partitions[0]
-            continue
+            disk = node.disks.get(name)
+            if len(disk.partitions) > 0:
+                partition = disk.partitions[0]
+                resp = node.client.bash('test -b {0} && dd if={0} of=/dev/null bs=4k count=1024'.format(partition.devicename)).get()
+                if resp.state == 'SUCCESS':
+                    return partition
         except:
             time.sleep(1)
             continue
@@ -96,14 +95,21 @@ class StoragePool(Mountable):
         param name: name of storagepool to delete
         param zero: write zeros (nulls) to the first 500MB of each disk in this storagepool
         """
+
         if self.mountpoint:
             self.umount()
         if zero:
+            partitionmap = {}
+            for disk in self.node.disks.list():
+                for partition in disk.partitions:
+                    partitionmap[partition.name] = partition
             for device in self.devices:
-                partition = os.path.basename(device)
-                disk, number = re.match(r'(\D+)(\d+)', partition).groups()
-                self._client.disk.rmpart(disk, int(number))
-                self._client.system('dd if=/dev/zero bs=1M count=500 of=/dev/{}'.format(disk)).get()
+                diskpath = os.path.basename(device)
+                partition = partitionmap.get(diskpath)
+                if partition:
+                    disk = partition.disk
+                    self._client.disk.rmpart(disk.name, 1)
+                    self._client.system('dd if=/dev/zero bs=1M count=500 of={}'.format(disk.devicename)).get()
 
     @property
     def mountpoint(self):
