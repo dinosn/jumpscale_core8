@@ -141,9 +141,9 @@ class Job:
         job_log_refs = j.logger.logging.manager.loggerDict['j.jobcontroller.job']
 
         # Properly cleaning logger referernces in logging module to avoid memory leaks.
-        del jc_log_refs.loggerMap[self.logger]
-        del job_log_refs.loggerMap[self.logger]
-        del j.logger.logging.manager.loggerDict[self.logger.name]
+        jc_log_refs.loggerMap.pop(self.logger, None)
+        job_log_refs.loggerMap.pop(self.logger, None)
+        j.logger.logging.manager.loggerDict.pop(self.logger.name, None)
 
         for h in self.logger.handlers:
             self.logger.removeHandler(h)
