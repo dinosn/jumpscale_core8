@@ -136,35 +136,14 @@ class LoggerFactory:
         if filter:
             self.handlers.consoleHandler.addFilter(ModuleFilter(filter))
 
-    def get(self, name=None, enable_only_me=False):
+    def get(self, name=None):
         """
-        Return a logger with the given name. Name will be prepend with 'j.' so
-        every logger return by this function is a child of the jumpscale root logger 'j'
+        Gets the logger of Jumpscale.
 
-        Usage:
-            self.logging = j.logger.get(__name__)
-        in library module always pass __name__ as argument.
+        @param name str: not used only for backward compatibility.
         """
-
-        name=name.strip()
-        name=name.lower()
-
-        # if len(name)>22:
-        #     name=name[0:22]
-
-        if not name:
-            path, ln, name, info = logging.root.findCaller()
-            if path.startswith(j.dirs.LIBDIR):
-                path = path.lstrip(j.dirs.LIBDIR)
-                name = path.replace(os.sep, '.')
-        if not name.startswith(self.root_logger_name):
-            name = "%s.%s" % (self.root_logger_name, name)
-
+        name = self.root_logger_name
         logger = logging.getLogger(name)
-
-        if enable_only_me:
-            logger = JSLogger(name)
-            logger.enable_only_me()
 
         return logger
 
