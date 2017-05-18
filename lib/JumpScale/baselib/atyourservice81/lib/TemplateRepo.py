@@ -1,7 +1,19 @@
 from JumpScale import j
 from JumpScale.baselib.atyourservice81.lib.ActorTemplate import ActorTemplate
 import asyncio
-import os
+import threading
+import inotify.adapters
+
+
+def get_root_template_repo(path):
+    template_repo = None
+    if 'templates' in path:
+        template_repo = path.split("templates")[0]
+    elif 'tests' in path:
+        template_repo = path.split("tests")[0]
+    elif 'actorTemplates' in path:
+        template_repo = path.split("actorTemplates")[0]
+    return template_repo
 
 
 def searchActorTemplates(path, is_global=False):
@@ -33,7 +45,10 @@ class TemplateRepoCollection:
 
     def _load(self):
         self.logger.info("reload actor templates repos")
-        for path in searchActorTemplates(j.dirs.CODEDIR, is_global=True):
+        return self.__load(j.dirs.CODEDIR)
+
+    def __load(self, path):
+        for path in searchActorTemplates(path, is_global=True):
             template_repo = None
             if 'templates' in path:
                 template_repo = path.split("templates")[0]
@@ -47,12 +62,67 @@ class TemplateRepoCollection:
                 continue
             self.create(path=template_repo)
 
-        for repo in list(self._template_repos.values()):
-            if not j.sal.fs.exists(repo.path):
-                self.logger.info("actor template repo {} doesn't exists anymore, unload".format(repo.path))
-                del(self._template_repos[repo.path])
+        t = threading.Thread(target=self._watch_repos)
+        t.start()
 
-        self._loop.call_later(60, self._load)
+    def _watch_repos(self):
+        mask = inotify.constants.IN_CLOSE_WRITE | inotify.constants.IN_MOVE | inotify.constants.IN_CREATE | inotify.constants.IN_DELETE | inotify.constants.IN_MODIFY
+        i = inotify.adapters.InotifyTrees([d.encode() for d in [j.dirs.CODEDIR]], mask=mask)
+
+        def delete_repo(repo_path):
+            self.logger.info("actor template repo {} doesn't exists anymore, unload".format(repo_path))
+            del(self._template_repos[repo_path])
+
+        def create_repo(repo_path):
+            self.create(path=repo_path)
+
+        def update_repo(repo_path):
+            self._templates[repo_path]._load()
+
+        def handle_file(dirname, filename, event):
+            if filename.endswith('.log'):
+                return
+            full_path = j.sal.fs.joinPaths(dirname, filename)
+            is_file = j.sal.fs.isFile(full_path)
+            # optimization to only react to these files
+            if is_file and filename not in ['schema.capnp', 'config.yaml', 'actions.py']:
+                return
+            containing_repos = [i for i in self._template_repos if full_path.startswith(i)]
+            inside_added_repo = bool(containing_repos)
+            containing_repo = containing_repos[0] if inside_added_repo else None
+            if inside_added_repo:
+                if not is_it_a_template_repo(containing_repo):
+                    delete_repo(containing_repo)
+                else:
+                    template_root = get_root_template_repo_if_relevant(dirname)
+                    if template_root is None:
+                        # not relevant
+                        pass
+                    elif template_root != containing_repo:
+                        # This is evil
+                        delete_repo(containing_repo)
+                        create_repo(template_root)
+                    else:
+                        if is_file:
+                            update_repo(template_root)
+                        else:
+                            cmd = """find %s \( -name schema.capnp -o -name config.yaml -o -name actions.py \) -print -quit""" % (path)
+                            rc, _, _ = j.sal.process.execute(cmd, die=False, showout=False)
+                            if rc != 0:
+                                update_repo(template_root)
+            else:
+                template_root = get_root_template_repo_if_relevant(dirname)
+                if template_root and template_root[0] in '._':
+                    template_root = None
+                if template_root:
+                    create_repo(template_root)
+                else:
+                    self.__load(full_path)
+
+        for event in i.event_gen():
+            if event is not None:
+                (header, type_names, dirname, filename) = event
+                handle_file(dirname.decode(), filename.decode(), event)
 
     def list(self):
         # todo protect with lock
@@ -197,8 +267,6 @@ class TemplateRepo():
             if not j.sal.fs.exists(template.path):
                 self.logger.info("template {} doesnt exists anymore, unload".format(template))
                 del(self._templates[template.name])
-
-        self._loop.call_later(60, self._load)
 
     @property
     def templates(self):
