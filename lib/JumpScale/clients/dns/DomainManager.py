@@ -13,8 +13,8 @@ class DomainManager:
     @property
     def domains(self):
         domains = []
-        if self.cuisine.core.file_exists('$JSCFGDIR/geodns/dns'):
-            for path in self.cuisine.core.find('$JSCFGDIR/geodns/dns/', type='f', pattern='*.json', recursive=False):
+        if self.cuisine.core.file_exists('$CFGDIR/geodns/dns'):
+            for path in self.cuisine.core.find('$CFGDIR/geodns/dns/', type='f', pattern='*.json', recursive=False):
                 basename = j.sal.fs.getBaseName(path)
                 domains.append(basename.rstrip('.json'))
         return domains
@@ -31,8 +31,8 @@ class DomainManager:
         @serial = int, used as a uniques key, need to be incretented after every change of the domain.
         @ns = list of name servers
         """
-        if self.cuisine.core.file_exists("$JSCFGDIR/geodns/dns/%s.json" % domain_name):
-            content = self.cuisine.core.file_read("$JSCFGDIR/geodns/dns/%s.json" % domain_name)
+        if self.cuisine.core.file_exists("$CFGDIR/geodns/dns/%s.json" % domain_name):
+            content = self.cuisine.core.file_read("$CFGDIR/geodns/dns/%s.json" % domain_name)
         domain_instance = Domain(domain_name, self.cuisine, serial, ttl, content,
                                  max_hosts, a_records, cname_records, ns)
         domain_instance.save()
@@ -42,7 +42,7 @@ class DomainManager:
         """
         get domain object with dict of relevant records
         """
-        if not self.cuisine.core.file_exists("$JSCFGDIR/geodns/dns/%s.json" % domain_name):
+        if not self.cuisine.core.file_exists("$CFGDIR/geodns/dns/%s.json" % domain_name):
             raise Exception("domain_name not created")
         return self.ensure_domain(domain_name)
 
@@ -50,7 +50,7 @@ class DomainManager:
         """
         delete domain object
         """
-        self.cuisine.core.file_unlink("$JSCFGDIR/geodns/dns/%s.json" % domain_name)
+        self.cuisine.core.file_unlink("$CFGDIR/geodns/dns/%s.json" % domain_name)
 
     def add_record(self, domain_name, subdomain, record_type, value, weight=100):
         """
@@ -197,5 +197,5 @@ class Domain:
         self.content["max_hosts"] = self.max_hosts
         self.content["data"][""]["ns"] = self.ns
         config = j.data.serializer.json.dumps(self.content)
-        self.cuisine.core.file_write("$JSCFGDIR/geodns/dns/%s.json" % self.name, config)
+        self.cuisine.core.file_write("$CFGDIR/geodns/dns/%s.json" % self.name, config)
         return config

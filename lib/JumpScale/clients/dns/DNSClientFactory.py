@@ -13,7 +13,7 @@ class DNSClientFactory():
             login=login,
             passwd=password,
             key_filename=sshkey_filename)
-        return executor.cuisine.apps.geodns
+        return executor.cuisine
 
     def getFromService(self, service):
         sshkey_path = None
