@@ -2,15 +2,19 @@
 
 # Click library has some problems with python3 when it comes to unicode: http://click.pocoo.org/5/python3/#python3-surrogates
 # to fix this we need to set the environ variables to export the locales
-import os
-os.environ['LC_ALL'] = 'C.UTF-8'
-os.environ['LANG'] = 'C.UTF-8'
 
 from JumpScale import j
 import io
 import time
 import click
-from requests.exceptions import HTTPError, ConnectionError
+import sys
+from requests.exceptions import HTTPError
+from functools import update_wrapper
+
+import os
+os.environ['LC_ALL'] = 'C.UTF-8'
+os.environ['LANG'] = 'C.UTF-8'
+
 
 repo = None
 
@@ -18,12 +22,20 @@ repo = None
 def _current_repo_name():
     return j.sal.fs.getBaseName(j.sal.fs.getcwd())
 
+
 ayscl = j.clients.atyourservice.get()
 
-while not j.sal.process.getProcessByPort(5000):
-    print ("waiting for AYS Server to start...")
-    time.sleep(2)
 
+def _check_started(f):
+    @click.pass_context
+    def _check_started(ctx, *args, **kwargs):
+        try:
+            j.sal.nettools.checkUrlReachable(ayscl.api.base_url)
+            return ctx.invoke(f, ctx.obj, *args, **kwargs)
+        except Exception:
+            print("AYS Server not reachable on {}".format(ayscl.api.base_url))
+            sys.exit(1)
+    return update_wrapper(_check_started, f)
 
 
 def _extract_error(resp):
@@ -47,19 +59,23 @@ def print_date(epoch):
 def cli():
     pass
 
+
 @cli.command()
+@_check_started
 def reload():
     """
     Reload AYS objects in memory
     """
     try:
         ayscl.api.ays.reload(data=None)
-        print ("AYS reloaded")
+        print("AYS reloaded")
     except Exception as e:
         print("Error during reload: {}".format(_extract_error(e)))
 
+
 # AYS repository related group of commands
 @cli.group()
+@_check_started
 def repo():
     """
     Group of commands about AYS repositories
@@ -120,6 +136,7 @@ def destroy():
     except Exception as e:
         print("Error while destroying repository: {}".format(_extract_error(e)))
 
+
 @repo.command()
 def delete():
     """
@@ -137,6 +154,7 @@ def delete():
 
 # AYS service related group of commands
 @cli.group()
+@_check_started
 def service():
     """
     Group of commands about services
@@ -304,7 +322,7 @@ def state(role, name):
 @service.command()
 @click.option('--role', '-r', default="", help='optional role for the service you want to delete')
 @click.option('--name', '-n', default="", help='optional name of the service')
-@click.option('--yes','-y','--assume-yes',default=False, is_flag=True,  help='Automatic yes to prompts. Assume "yes" as answer to all prompts and run non-interactively')
+@click.option('--yes', '-y', '--assume-yes', default=False, is_flag=True, help='Automatic yes to prompts. Assume "yes" as answer to all prompts and run non-interactively')
 def delete(role, name, assume_yes):
     """
     Delete a service and all its children
@@ -366,6 +384,7 @@ def delete(role, name, assume_yes):
 
 
 @cli.group()
+@_check_started
 def actor():
     """
     Group of commands about actors
@@ -422,6 +441,7 @@ def update(name, reschedule):
 
 
 @cli.group()
+@_check_started
 def template():
     """
     Group of commands about actor templates
@@ -439,11 +459,12 @@ def list():
         print("error during listing of templates: {}".format(_extract_error(e)))
         return
 
-    for template in sorted(resp.json(),  key=lambda x: x['name']):
+    for template in sorted(resp.json(), key=lambda x: x['name']):
         print("{name}".format(**template))
 
 
 @cli.group()
+@_check_started
 def run():
     """
     Group of commands about runs
@@ -477,7 +498,7 @@ def _print_run(run, logs=False):
 
 
 @run.command()
-@click.option('--yes','-y','--assume-yes',default=False, is_flag=True,  help='Automatic yes to prompts. Assume "yes" as answer to all prompts and run non-interactively')
+@click.option('--yes', '-y', '--assume-yes', default=False, is_flag=True, help='Automatic yes to prompts. Assume "yes" as answer to all prompts and run non-interactively')
 @click.option('--force', default=False, is_flag=True, help='force execution even if no change')
 @click.option('--debug', default=False, is_flag=True, help='enable debug in jobs')
 @click.option('--profile', default=False, is_flag=True, help='enable profiling of the jobs')
@@ -570,7 +591,7 @@ def show(key, logs):
         runs = resp.json()
         runs = sorted(runs, key=lambda x: x['epoch'])
         if not runs:
-            print ('no runs to show')
+            print('no runs to show')
             return
         key = runs[-1]['key']
 
@@ -596,6 +617,7 @@ def start(bind, port, log):
 
 
 @cli.command()
+@_check_started
 @click.argument('name', default='')
 def blueprint(name):
     """
@@ -624,10 +646,12 @@ def blueprint(name):
 
 
 @cli.group()
+@_check_started
 def scheduler():
     """
     Group of commands about run scheduler
     """
+
 
 @scheduler.command()
 def status():
@@ -659,13 +683,14 @@ status: {state}
     print(msg)
 
 
-# AYS repository related group of commands
+# AYS ACTION COMMAND
 @cli.command()
 @click.argument('action')
-@click.option('--yes','-y','--assume-yes',default=False, is_flag=True,  help='Automatic yes to prompts. Assume "yes" as answer to all prompts and run non-interactively')
+@click.option('--yes', '-y', '--assume-yes', default=False, is_flag=True, help='Automatic yes to prompts. Assume "yes" as answer to all prompts and run non-interactively')
 @click.option('--actor', '-a', help='filter actor by name')
 @click.option('--service', '-s', help='filter service by name')
 @click.option('--force', '-f', default=False, is_flag=True, help='force action')
+@_check_started
 def action(action, assume_yes, actor, service, force):
     """
     Shortcut to execute actions blocks
