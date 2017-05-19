@@ -113,14 +113,13 @@ class StoragePool(Mountable):
 
     @property
     def mountpoint(self):
-        disks = self._client.disk.list()['blockdevices']
+        mounts = self.node.list_mounts()
         for device in self.devices:
-            for disk in disks:
-                if device == "/dev/%s" % disk['kname'] and disk['mountpoint']:
-                    return disk['mountpoint']
-                for part in disk.get('children', []) or []:
-                    if device == "/dev/%s" % part['kname'] and part['mountpoint']:
-                        return part['mountpoint']
+            for mount in mounts:
+                if mount.device == device:
+                    options = mount.options.split(',')
+                    if 'subvol=/' in options:
+                        return mount.mountpoint
 
     def is_device_used(self, device):
         """
