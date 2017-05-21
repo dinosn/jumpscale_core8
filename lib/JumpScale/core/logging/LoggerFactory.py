@@ -136,13 +136,14 @@ class LoggerFactory:
         if filter:
             self.handlers.consoleHandler.addFilter(ModuleFilter(filter))
 
-    def get(self, name=None):
+    def get(self, name=None, new=False):
         """
         Gets the logger of Jumpscale.
 
         @param name str: not used only for backward compatibility.
         """
-        name = self.root_logger_name
+        if new is False:
+            name = self.root_logger_name
         logger = logging.getLogger(name)
 
         return logger

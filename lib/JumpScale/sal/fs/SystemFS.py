@@ -3,6 +3,7 @@ import os
 import os.path
 import hashlib
 import re
+import logging
 import fnmatch
 import time
 import shutil
@@ -23,6 +24,9 @@ from JumpScale import j
 # import JumpScale.baselib.codetools #requirement for parsePath
 # from text import Text
 
+logger = logging.getLogger("j.sal.fs")
+logger.addHandler(logging.NullHandler())
+
 toStr = j.data.text.toStr
 
 # from JumpScale.core.decorators import deprecated
@@ -36,8 +40,6 @@ if not sys.platform.startswith('win'):
         pass
 
 _LOCKDICTIONARY = dict()
-
-logger = j.logger.get('j.sal.fs')
 
 
 class LockException(Exception):
@@ -234,7 +236,7 @@ class SystemFS:
 
     def __init__(self):
         self.__jslocation__ = "j.sal.fs"
-        self.logger = j.logger.get("j.sal.fs")
+        self.logger = logger
         self.walker = SystemFSWalker()
 
     def copyFile(self, fileFrom, to, createDirIfNeeded=False, overwriteFile=True):
@@ -1602,7 +1604,7 @@ class SystemFS:
         To find only the second one you could use
            j.sal.fs.walkExtended('tmp', recurse=0, dirPattern="*small_test*", filePattern="*.rtt", dirs=False)
         """
-        self.logger.debug('Scanning directory (walk) %s' % root, 6)
+        self.logger.debug('Scanning directory (walk) %s' % root)
         result = []
         try:
             names = os.listdir(root)
