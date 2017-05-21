@@ -132,6 +132,8 @@ class Container:
         return self._client
 
     def upload_content(self, remote, content):
+        if isinstance(content, str):
+            content = content.encode('utf8')
         bytes = BytesIO(content)
         self.client.filesystem.upload(remote, bytes)
 

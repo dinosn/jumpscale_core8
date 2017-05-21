@@ -18,4 +18,4 @@ class Firewall:
         self.container.upload_content('/etc/snat_rules', snat)
         dnat = templates.render('dnat.rules', portforwards=self.forwards)
         self.container.upload_content('/etc/dnat_rules', dnat)
-        self.container.system('nft -f /etc/nftables.conf').get()
+        self.container.client.system('nft -f /etc/nftables.conf').get()
