@@ -343,11 +343,13 @@ class Service:
             for producer in producers:
                 producer.model.consumerRemove(self)
                 producer.model.reSerialize()
+                producer.saveAll()
 
         for consumers in self.consumers.values():
             for consumer in consumers:
                 consumer.model.producerRemove(self)
                 consumer.model.reSerialize()
+                consumer.saveAll()
 
         self.model.delete()
         j.sal.fs.removeDirTree(self.path)
