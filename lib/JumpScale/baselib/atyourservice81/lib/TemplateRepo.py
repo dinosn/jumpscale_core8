@@ -83,7 +83,6 @@ class TemplateRepoCollection:
         if j.sal.fs.getBaseName(full_path)[0] in '._':
             return
         is_file = j.sal.fs.isFile(full_path)
-        self.logger.debug('ASD: {}'.format(full_path))
         # optimization to only react to these files
         if is_file and filename not in ['schema.capnp', 'config.yaml', 'actions.py']:
             return
@@ -117,6 +116,9 @@ class TemplateRepoCollection:
             if template_root:
                 self.create(template_root)
             else:
+                for i in self._template_repos:
+                    if i.startswith(full_path):
+                        self.delete(i)
                 self.__load(full_path)
 
     def list(self):
@@ -141,7 +143,7 @@ class TemplateRepoCollection:
                 raise j.exceptions.NotFound("path '{}' and its parents is not a git repository".format(original_path))
 
             self.logger.debug("New template repos found at {}".format(path))
-            self._template_repos[path] = TemplateRepo(path, is_global=is_global)
+            self._template_repos[path] = TemplateRepo(path, is_global=is_global, loop=self._loop)
 
         return self._template_repos[path]
 
@@ -225,9 +227,9 @@ class TemplateRepo():
     Represent git repository containing Actor templates
     """
 
-    def __init__(self, path, is_global=True):
+    def __init__(self, path, is_global=True, loop=None):
         self.logger = j.logger.get('j.atyourservice')
-        self._loop = asyncio.get_event_loop()
+        self._loop = loop or asyncio.get_event_loop()
         self.path = j.sal.fs.pathNormalize(path)
         self.git = j.clients.git.get(self.path, check_path=False)
         self.is_global = is_global

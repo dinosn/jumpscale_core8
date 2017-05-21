@@ -35,7 +35,7 @@ class AtYourServiceRepoCollection:
             for path in self._searchAysRepos(dir_path):
                 self.logger.debug("AYS repo found {}".format(path))
                 try:
-                    repo = AtYourServiceRepo(path)
+                    repo = AtYourServiceRepo(path, loop=self._loop)
                     self._repos[repo.path] = repo
                 except Exception as e:
                     self.logger.exception("can't load repo at {}: {}".format(path, str(e)))
@@ -54,7 +54,7 @@ class AtYourServiceRepoCollection:
                     if current_path not in self._repos:
                         self.logger.debug("AYS repo added {}".format(current_path))
                         try:
-                            repo = AtYourServiceRepo(current_path)
+                            repo = AtYourServiceRepo(current_path, loop=self._loop)
                             self._repos[repo.path] = repo
                         except Exception as e:
                             self.logger.exception("can't load repo at {}: {}".format(current_path, str(e)))
@@ -75,7 +75,7 @@ class AtYourServiceRepoCollection:
         if path not in self._repos:
             self.logger.debug("Loading AYS repo {}".format(path))
             try:
-                repo = AtYourServiceRepo(path)
+                repo = AtYourServiceRepo(path, loop=self._loop)
                 self._repos[repo.path] = repo
             except Exception as e:
                 self.logger.error('can not load repo at {}: {}'.format(path, str(e)))
@@ -122,7 +122,7 @@ class AtYourServiceRepoCollection:
             'https://raw.githubusercontent.com/github/gitignore/master/Python.gitignore', j.sal.fs.joinPaths(path, '.gitignore'))
 
         # TODO lock
-        self._repos[path] = AtYourServiceRepo(path=path)
+        self._repos[path] = AtYourServiceRepo(path=path, loop=self._loop)
         print("AYS Repo created at %s" % path)
         return self._repos[path]
 
@@ -153,7 +153,7 @@ DBTuple = namedtuple("DB", ['actors', 'services'])
 
 class AtYourServiceRepo():
 
-    def __init__(self, path):
+    def __init__(self, path, loop=None):
         self.logger = j.logger.get('j.atyourservice')
         self.path = j.sal.fs.pathNormalize(path).rstrip("/")
         self.name = j.sal.fs.getBaseName(self.path)
@@ -161,20 +161,26 @@ class AtYourServiceRepo():
         self._db = None
         self.no_exec = False
 
-        try:
-            loop = asyncio.get_event_loop()
-        except:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+        self._loop = loop or asyncio.get_event_loop()
 
-        self._loop = loop
-
-        self.run_scheduler = RunScheduler(self)
-        self._run_scheduler_task = self._loop.create_task(self.run_scheduler.start())
+        self._run_scheduler = None
+        self.__run_scheduler_task = None
 
         j.atyourservice._loadActionBase()
 
         self._load_services()
+
+    @property
+    def run_scheduler(self):
+        if self._run_scheduler is None:
+            self._run_scheduler = RunScheduler(self)
+        return self._run_scheduler
+
+    @property
+    def _run_scheduler_task(self):
+        if self.__run_scheduler_task is None:
+            self.__run_scheduler_task = self._loop.create_task(self.run_scheduler.start())
+        return self.__run_scheduler_task
 
     @property
     def db(self):
