@@ -257,7 +257,7 @@ class AtYourServiceRepo():
                                             name, level=1, source="", tags="", msgpub="")
 
             obj = self.actorCreate(name)
-
+            obj.saveAll()
         return obj
 
     def actorGetByKey(self, key):
