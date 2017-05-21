@@ -115,7 +115,6 @@ class Application:
         from IPython import embed
         print("DEBUG NOW fix locale in application")
         embed()
-        o
 
     def init(self):
         j.errorconditionhandler.setExceptHook()
@@ -125,7 +124,7 @@ class Application:
             logging_cfg = self.config.jumpscale.get('logging')
             if not logging_cfg:
                 # auto recover logging settings
-                j.do.installer._writeLoggingEnv(j.dirs.JSCFGDIR)
+                j.do.installer.writeEnv()
                 logging_cfg = self.config.jumpscale.get('logging')
             level = logging_cfg.get('level', 'DEBUG')
             mode = logging_cfg.get('mode', 'DEV')
