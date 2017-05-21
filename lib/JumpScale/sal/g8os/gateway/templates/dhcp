@@ -1,0 +1,7 @@
+{% for vm in machines -%}
+{% for nic in vm.nics -%}
+{% if nic.type == 'vxlan' and nic.networkId == networkId -%}
+{{nic.macAddress}},{{nic.ipAddress}},vm-{{vm.id}},infinite,
+{% endif -%}
+{% endfor -%}
+{% endfor -%}

@@ -1,0 +1,4 @@
+{% for fw in portforwards -%}
+add rule ip nat do_dnat ip daddr {{fw.fromAddr}} {{fw.protocol}} dport {{fw.fromPort}} dnat {{fw.toAddr}}:{{fw.toPort}}
+{% endfor -%}
+add rule ip nat do_dnat return

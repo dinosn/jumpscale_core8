@@ -1,0 +1,9 @@
+# other notation but also valid for nft -f
+
+# let's always add dest_ip for future extensibility (multiple pub_ips)
+
+# if vm-1234 resolves (which it should) no need to insert ip
+# ip saddr vm-1234 snat ${CS_otherpub}
+
+# snat rest as one specific ip
+add rule ip nat do_snat ip saddr {{subnet}}/{{subnetmask}} snat {{publicip}} fully-random
