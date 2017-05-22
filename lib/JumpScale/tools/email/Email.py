@@ -53,7 +53,7 @@ class EmailTool:
         msg = get_json_msg(k)  # get message path
         return Message(k, msg)
 
-    def getSender(self, username, password, host='smtp.mandrillapp.com', port=587):
+    def getSender(self, username, password, host='localhost', port=25):
         return Sender.Sender(username, password, host, port)
 
     def getDefaultSender(self):
